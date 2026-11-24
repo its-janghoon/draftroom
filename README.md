@@ -54,15 +54,28 @@ Check the planner on every team pair through a full Bo5:
 node tests/planner.test.js
 ```
 
+## Backtest
+
+Had a coach used the planner before each real LCS 2026 game, how often would its prediction of the opponent's picks have been right? The planner is scored on past games using only what was known before each series, and compared with a naive "most played" baseline. Rerun it:
+
+```bash
+python pipeline/backtest.py --data ../stl-hackathon-2026-grid-starter
+node tests/backtest.js
+```
+
+Results and what they do and do not mean: [docs/backtest.md](docs/backtest.md).
+
 ## Layout
 
 | Path | Job |
 |---|---|
 | `pipeline/extract.py` | Streams every LoL feed once and keeps the per-game facts the app needs, in `cache/games.json`. |
 | `pipeline/build.py` | Builds team profiles and the real series into `web/data.js`. |
+| `pipeline/backtest.py` | Builds the backtest cases (profiles from prior games only) into `cache/backtest-cases.json`. |
 | `web/planner.js` | The plan rules above. Plain JavaScript, no dependencies, also runs in Node. |
 | `web/app.js` | Series state, the lock-in dialog and the champion-select replay. The series is kept in the browser's local storage. |
 | `tests/planner.test.js` | Planner checks. |
+| `tests/backtest.js` | Scores the planner against real games and writes `docs/backtest.md`. |
 
 Roles are inferred from where each player stood between 1:30 and 5:30 and their starting item, then voted over all of that player's games.
 
