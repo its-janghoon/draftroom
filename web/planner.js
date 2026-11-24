@@ -96,19 +96,26 @@
     const rate = (p, k) => Math.round(100 * (p.e[k] || 0) / p.n);
     const edges = { drag: [rate(us, 'drag'), rate(op, 'drag')], fb: [rate(us, 'fb'), rate(op, 'fb')], grub: [rate(us, 'grub'), rate(op, 'grub')] };
     const best = Object.keys(edges).sort((a, b) => (edges[b][0] - edges[b][1]) - (edges[a][0] - edges[a][1]))[0];
-    const gave = op.fb_gave;
-    const roleCount = {};
-    gave.forEach(v => { if (v[1]) roleCount[v[1]] = (roleCount[v[1]] || 0) + 1; });
+    // fb_gave is a list of deaths in the full form, or counts only in the demo form
+    const gave = op.fb_gave, summary = !Array.isArray(gave), gaveN = summary ? gave.n : gave.length;
+    let roleCount = {}, vicNames = {}, vicZones = {};
+    if (summary) roleCount = gave.by_role || {};
+    else gave.forEach(v => { if (v[1]) roleCount[v[1]] = (roleCount[v[1]] || 0) + 1; });
     const [vr, vrN] = top(roleCount)[0] || [null, 0];
-    const vicNames = {}, vicZones = {};
-    gave.filter(v => v[1] === vr).forEach(v => { vicNames[v[2]] = (vicNames[v[2]] || 0) + 1; vicZones[v[0]] = (vicZones[v[0]] || 0) + 1; });
-    const vicName = (top(vicNames)[0] || [op.players[vr]])[0];
+    if (summary) {
+      // counts by name are not split by role: take the role's main player when they appear, else the most frequent name
+      vicNames = gave.by_name || {};
+      vicZones = (gave.by_role_zone || {})[vr] || {};
+    } else
+      gave.filter(v => v[1] === vr).forEach(v => { vicNames[v[2]] = (vicNames[v[2]] || 0) + 1; vicZones[v[0]] = (vicZones[v[0]] || 0) + 1; });
+    const mainName = op.players[vr];
+    const vicName = (summary && mainName in vicNames ? mainName : (top(vicNames)[0] || [mainName])[0]);
     const [vz, vzN] = top(vicZones)[0] || ['jungle', 0];
     let line3, why3;
     if (best === 'fb' && vr) {
-      const med = us.fb_got[Math.floor(us.fb_got.length / 2)];
+      const med = Array.isArray(us.fb_got) ? us.fb_got[Math.floor(us.fb_got.length / 2)] : us.fb_got.median;
       line3 = `Kill ${vicName} in the ${PLACE[vz]} before ${mmss(Math.floor(med / 30) * 30 + 30)}`;
-      why3 = `Their ${ROLE_PERSON[vr]} is the first to die in <b>${vrN} of ${gave.length}</b> games, ${vzN} in the ${PLACE[vz]}. Half our first kills come by <b>${mmss(med)}</b>.`;
+      why3 = `Their ${ROLE_PERSON[vr]} is the first to die in <b>${vrN} of ${gaveN}</b> games, ${vzN} in the ${PLACE[vz]}. Half our first kills come by <b>${mmss(med)}</b>.`;
     } else if (best === 'drag') {
       line3 = `Take the first dragon before ${mmss(Math.floor(us.fd_avg / 30) * 30 + 30)}`;
       why3 = `We get the first dragon in <b>${edges.drag[0]}%</b> of games, ${op.tag} in <b>${edges.drag[1]}%</b>. It falls at ${mmss(us.fd_avg)} in our games, ${mmss(op.fd_avg)} in theirs.`;
@@ -153,11 +160,12 @@
       habits: [
         [mmss(op.fd_avg), `when the first dragon falls in their games, ${Math.abs(op.fd_avg - us.fd_avg)} seconds ${op.fd_avg > us.fd_avg ? 'later' : 'earlier'} than in ours`],
         [`${op.e.fb_jungle || 0}/${op.e.fb || 0}`, 'of their first kills happen in the jungle'],
-        [`${h2h.filter(g => g.winner === themId).length}/${h2h.length}`, 'games won against us this year'],
+        ...(h2h.length ? [[`${h2h.filter(g => g.winner === themId).length}/${h2h.length}`, 'games won against us this year']] : []),
       ],
       first_picks: top(op.first_pick).slice(0, 5),
-      fb_map: gave.filter(v => v[3] != null).map(v => [...flip(v), v[1] === vr ? 1 : 0]),
-      fb_victim: { name: vicName, role: ROLE_PERSON[vr] || '', n: vrN, of: gave.length },
+      fb_map: summary ? [] : gave.filter(v => v[3] != null).map(v => [...flip(v), v[1] === vr ? 1 : 0]),
+      fb_grid: summary ? { zones: gave.by_zone || {}, hit: vz } : null,
+      fb_victim: { name: vicName, role: ROLE_PERSON[vr] || '', n: vrN, of: gaveN },
     };
   }
 
