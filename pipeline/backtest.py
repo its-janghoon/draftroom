@@ -82,6 +82,10 @@ def main():
             'teams': pair,
             'profiles': {t: profiles[t] for t in pair},
             'locked': [d[3] for e in earlier for d in e['draft'] if d[1] == 'pick'],
+            # every champion picked in the whole series, this game and the later ones included:
+            # only for scoring afterwards (did a role run dry?), never an input to the planner
+            'series_picks': [d[3] for e in order for d in e['draft'] if d[1] == 'pick'],
+            'series_games': len(order),
             'actual': {t: {'picks': picks_of(g, t), 'bans': bans_of(g, t)} for t in pair},
         })
 
