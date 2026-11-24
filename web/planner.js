@@ -141,6 +141,17 @@
     };
   }
 
-  const api = { plan, mmss, own, ROLES };
+  // how deep each role stays for the rest of the series: proven champions (5+ games) not locked yet.
+  // open = still free after this game's planned picks; planned = proven champions this game's plan uses.
+  function outlook(D, usId, locked, plannedPicks) {
+    const us = D.teams[usId], gone = new Set(locked);
+    const used = new Set((plannedPicks || []).map(p => (typeof p === 'string' ? p : p.champ)));
+    return ROLES.map(role => {
+      const proven = Object.entries(us.pool[role] || {}).filter(([c, rec]) => rec[0] >= 5 && !gone.has(c)).map(([c]) => c);
+      return { role, open: proven.filter(c => !used.has(c)), planned: proven.filter(c => used.has(c)) };
+    });
+  }
+
+  const api = { plan, outlook, mmss, own, ROLES, ROLE_NAME };
   if (typeof module !== 'undefined') module.exports = api; else root.Planner = api;
 })(this);

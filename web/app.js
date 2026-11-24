@@ -106,6 +106,7 @@
     $('pool').innerHTML = m.pool.map(r => `<tr><td>${r.role}</td><td><div class="row3">${
       r.champs.map(([c, rec]) => `<span class="ch" data-champ="${esc(c)}"><b>${esc(c)}</b> <i>${rec}</i></span>`).join('')}</div></td></tr>`).join('');
     $('thin').textContent = m.thin;
+    outlook(N, done);
     recap(us, op, last, N);
 
     $('draftTitle').textContent = `Draft plan for game ${N}`;
@@ -134,6 +135,20 @@
     $('src').textContent = `Official GRID data, ${D.season}. ${us.name} ${us.n} games, ${op.name} ${op.n} games.` + (real ? ` Game 1 from the ${real.date} series.` : '');
   }
 
+  // fearless outlook: one dot per proven champion still open after this game's picks, hollow if the plan uses it
+  function outlook(N, done) {
+    $('outlookHead').style.display = $('outlook').style.display = done ? 'none' : '';
+    if (done) { $('outlook').innerHTML = ''; return; }
+    const from = N + 1, games = from === S.fmt ? `game ${from}` : `games ${from}-${S.fmt}`;
+    $('outlook').innerHTML = P.outlook(D, S.us, locked(), m.steps.us_pick).map(r => {
+      const dots = r.open.map(c => `<i class="dot" title="${esc(c)}"></i>`).join('') +
+        r.planned.map(c => `<i class="dot plan" title="${esc(c)}, in this game's plan"></i>`).join('');
+      const warn = r.open.length <= 2 && from <= S.fmt ? `<span class="warn">${r.open.length} left for ${games}</span>` : '';
+      return `<div class="orow"><span class="role">${P.ROLE_NAME[r.role]}</span><span class="dots" role="img" aria-label="${r.open.length} proven open, ${r.planned.length} planned">${dots}</span>` +
+        `<b>${r.open.length}</b>${warn}</div>`;
+    }).join('');
+  }
+
   function recap(us, op, last, N) {
     const name = id => (id === S.us ? us.tag : op.tag);
     if (!last) {
@@ -144,17 +159,17 @@
         (last.real && last.real.length ? ` in ${P.mmss(last.real.length)}` : '');
       const r = last.real, f = [];
       if (r) {
-        if (r.first_scuttle) f.push(`<b>${esc(r.first_scuttle.who)}</b> (${name(r.first_scuttle.team)}) took ${r.first_scuttle.side} scuttle first at ${P.mmss(r.first_scuttle.sec)}.`);
-        if (r.first_blood) f.push(`<b>${esc(r.first_blood.killer)}</b> (${name(r.first_blood.team)}) killed ${esc(r.first_blood.victim)} first, in the ${r.first_blood.zone}, at ${P.mmss(r.first_blood.sec)}.`);
-        if (r.first_dragon) f.push(`${r.first_dragon.team === S.us ? 'We' : op.tag} took the first dragon at ${P.mmss(r.first_dragon.sec)}.`);
-        if (r.gold) f.push(`Final gold: ${op.tag} ${(r.gold[S.them] / 1000).toFixed(1)}k, us ${(r.gold[S.us] / 1000).toFixed(1)}k.`);
+        if (r.first_scuttle) f.push(`Scuttle: <b>${esc(r.first_scuttle.who)}</b> (${name(r.first_scuttle.team)}), ${r.first_scuttle.side}, ${P.mmss(r.first_scuttle.sec)}`);
+        if (r.first_blood) f.push(`First blood: <b>${esc(r.first_blood.killer)}</b> (${name(r.first_blood.team)}), ${r.first_blood.zone}, ${P.mmss(r.first_blood.sec)}`);
+        if (r.first_dragon) f.push(`First dragon: ${r.first_dragon.team === S.us ? us.tag : op.tag}, ${P.mmss(r.first_dragon.sec)}`);
+        if (r.gold) f.push(`Final gold: ${op.tag} ${(r.gold[S.them] / 1000).toFixed(1)}k, ${us.tag} ${(r.gold[S.us] / 1000).toFixed(1)}k`);
       } else f.push(`Entered by hand: ${last.picks.us.join(', ')} against ${last.picks.them.join(', ')}.`);
       $('recap').innerHTML = f.map(x => `<li>${x}</li>`).join('');
     }
     const usedUs = S.games.flatMap(g => g.picks.us), usedThem = S.games.flatMap(g => g.picks.them);
     $('usedHead').style.display = S.games.length ? '' : 'none';
     $('used').innerHTML = S.games.length ? [[us.tag, 'us', usedUs], [op.tag, 'them', usedThem]].map(([t, c, xs]) =>
-      `<div class="used"><span class="t ${c}">${esc(t)}</span>${xs.map(x => `<span>${esc(x)}</span>`).join('')}</div>`).join('') : '';
+      `<div class="used" title="${esc(xs.join(', '))}"><span class="t ${c}">${esc(t)}</span>${xs.map(x => `<span>${esc(x)}</span>`).join('')}</div>`).join('') : '';
   }
 
   // Summoner's Rift as plain shapes (no game art). Game units 0..15000, y up.

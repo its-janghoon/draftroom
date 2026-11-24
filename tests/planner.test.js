@@ -6,7 +6,7 @@ const src = fs.readFileSync(path.join(__dirname, '..', 'web', 'data.js'), 'utf8'
 const window = {};
 new Function('window', src)(window);
 const D = window.DRAFTROOM;
-const { plan } = require('../web/planner.js');
+const { plan, outlook } = require('../web/planner.js');
 
 let checked = 0;
 for (const us of Object.keys(D.teams)) for (const them of Object.keys(D.teams)) {
@@ -18,6 +18,12 @@ for (const us of Object.keys(D.teams)) for (const them of Object.keys(D.teams)) 
     assert.strictEqual(new Set(named).size, named.length, `${us} vs ${them} game ${game}: a champion is planned twice`);
     for (const c of named) assert(!locked.includes(c), `${us} vs ${them} game ${game}: ${c} is locked by fearless`);
     assert(p.plan.line3 && p.plan.ban_why, `${us} vs ${them} game ${game}: empty plan line`);
+    const ol = outlook(D, us, locked, p.steps.us_pick);
+    assert.strictEqual(ol.length, 5, `${us} vs ${them} game ${game}: outlook needs one row per role`);
+    for (const r of ol) {
+      for (const c of [...r.open, ...r.planned]) assert(!locked.includes(c), `${us} game ${game}: outlook lists locked ${c}`);
+      for (const c of r.open) assert(!r.planned.includes(c), `${us} game ${game}: ${c} is both open and planned`);
+    }
     // play the game as planned, plus the next champions in each pool, then lock all of it
     locked.push(...p.steps.us_pick.map(s => s.champ), ...p.steps.them_pick.map(s => s.champ));
     checked++;
