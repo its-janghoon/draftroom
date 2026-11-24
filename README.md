@@ -48,6 +48,8 @@ open web/index.html        # or: python -m http.server 8000 --bind 127.0.0.1 --d
 
 `pipeline/build.py --league LEC --since 2026-01-01` builds the same app for another league.
 
+`pipeline/build.py --anon` builds a demo copy where every team but Cloud9 gets a made-up name (Team Acme, Team Birch, ...). The demo video uses it.
+
 Check the planner on every team pair through a full Bo5:
 
 ```bash

@@ -14,6 +14,10 @@ RECENT = 10   # "recent" means a team's last 10 games before the cutoff
 TAGS = {'Cloud9 Kia': 'C9', 'Team Liquid Alienware': 'TL', 'FlyQuest': 'FLY', 'LYON': 'LYON', 'Sentinels': 'SEN',
         'Shopify Rebellion': 'SR', 'Disguised': 'DSG', 'Dignitas': 'DIG', '100 Thieves': '100'}
 SHORT = {'Team Liquid Alienware': 'Team Liquid'}
+# --anon: made-up team names, given out by games played (most games first)
+ANON = [('Team Acme', 'ACM'), ('Team Birch', 'BIR'), ('Team Cobalt', 'COB'), ('Team Delta', 'DEL'),
+        ('Team Ember', 'EMB'), ('Team Falcon', 'FAL'), ('Team Granite', 'GRA'), ('Team Harbor', 'HAR'),
+        ('Team Iris', 'IRS'), ('Team Juniper', 'JUN'), ('Team Kestrel', 'KES'), ('Team Lumen', 'LUM')]
 
 
 def role_of(g, player):
@@ -114,6 +118,7 @@ def main():
     ap.add_argument('--out', default='web/data.js')
     ap.add_argument('--league', default='LCS')
     ap.add_argument('--since', default='2026-01-01')
+    ap.add_argument('--anon', action='store_true', help='demo build: made-up names for every team but Cloud9')
     args = ap.parse_args()
     data = Path(args.data)
     G = json.load(open(args.games))
@@ -153,6 +158,15 @@ def main():
             })
         out_series.append({'id': sid, 'date': gs[0]['date'], 'event': gs[0]['event'], 'teams': pair, 'games': games})
     out_series.sort(key=lambda s: s['date'])
+
+    if args.anon:
+        # demo build: keep Cloud9, give every other team a made-up name (for videos and screenshots)
+        fake = iter(ANON)
+        for t in sorted(teams.values(), key=lambda t: -t['n']):
+            if t['tag'] == 'C9':
+                t['name'] = 'Cloud9'
+            else:
+                t['name'], t['tag'] = next(fake)
 
     payload = {'season': f'{args.league} {args.since[:4]}', 'champions': champions, 'teams': teams, 'series': out_series}
     out = Path(args.out)
