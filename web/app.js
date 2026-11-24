@@ -100,6 +100,7 @@
         <span class="say">${esc(m.plan.line3)}</span><span class="why">${m.plan.why3}</span></li>`;
     $('lockBtn').textContent = `Lock game ${N}`;
     $('lockBtn').disabled = done;
+    $('copyBtn').disabled = done;
     $('lockNote').textContent = done ? '' : N < S.fmt ? `Then plan game ${N + 1}` : 'Last possible game';
 
     $('pool').innerHTML = m.pool.map(r => `<tr><td>${r.role}</td><td><div class="row3">${
@@ -172,6 +173,23 @@
     $('mapNote').innerHTML = v.n ? `<b>${esc(v.name)}</b>, their ${v.role}, is the first to die in <b>${v.n} of ${v.of}</b> games.` +
       `<span class="key"><i class="k hit"></i>${esc(v.name)} <i class="k"></i>others</span>` : 'Not enough games yet.';
   }
+
+  // ---------- copy the plan as plain text for the team chat ----------
+  let copyTimer;
+  function copyPlan() {
+    const us = team(S.us), op = team(S.them), btn = $('copyBtn');
+    const text = `Game ${gameNo()} vs ${op.name} (${us.tag} ${m.usSide} side)\n` +
+      `1. Ban ${m.plan.bans.join(', ')}\n2. Pick ${m.plan.picks.join(', ')}\n3. ${m.plan.line3}`;
+    const flash = label => {
+      btn.textContent = label;
+      clearTimeout(copyTimer);
+      copyTimer = setTimeout(() => (btn.textContent = 'Copy plan'), 1500);
+    };
+    try {
+      navigator.clipboard.writeText(text).then(() => flash('Copied'), () => flash('Copy failed'));
+    } catch (e) { flash('Copy failed'); }
+  }
+  $('copyBtn').onclick = copyPlan;
 
   // ---------- lock in what was played ----------
   const norm = s => s.trim().toLowerCase().replace(/[^a-z]/g, '');
