@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Draft Room</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="top">
+  <div class="title">
+    <div class="match"><span class="us" id="usName"></span><span class="sc num" id="score"></span><span class="them" id="oppName"></span></div>
+    <div class="game" id="gameLine"></div>
+  </div>
+  <div class="setup">
+    <select id="usSel" aria-label="Our team"></select><span>vs</span>
+    <select id="oppSel" aria-label="Opponent"></select>
+    <select id="fmtSel" aria-label="Series length"><option value="3">Bo3</option><option value="5">Bo5</option></select>
+    <div class="games-strip" id="strip" aria-label="Games in the series"></div>
+    <select id="realSel" aria-label="Load a real series"></select>
+    <button type="button" id="newSeries">New series</button>
+    <button type="button" id="connectBtn" class="secondary">Connect official data</button>
+  </div>
+</div>
+
+<section class="plan" aria-label="Plan for the next game">
+  <h2 id="planHead"></h2>
+  <ol id="planList"></ol>
+  <div class="go"><button type="button" id="lockBtn"></button><div class="btns"><button type="button" id="copyBtn" class="secondary">Copy plan</button><button type="button" id="printBtn" class="secondary">Print sheet</button></div><small id="lockNote"></small></div>
+</section>
+
+<div class="board">
+  <section class="sheet">
+    <h3>What you still have</h3>
+    <table class="pool num" id="pool"></table>
+    <p class="thin" id="thin"></p>
+    <h3 class="outlook-h" id="outlookHead">Fearless outlook</h3>
+    <div class="outlook num" id="outlook"></div>
+    <h3 style="margin-top:12px" id="recapHead"></h3>
+    <ul class="g1 num" id="recap"></ul>
+    <p class="used-h" id="usedHead">Locked for the series</p>
+    <div id="used"></div>
+  </section>
+
+  <section class="sheet">
+    <div class="draft-head">
+      <div><h3 id="draftTitle"></h3>
+      <p class="hint" id="draftHint"></p></div>
+      <div class="clock" aria-live="polite">
+        <div class="clock-line"><span class="turn" id="turn"></span><span class="secs num" id="secs">30</span></div>
+        <div class="clock-bar"><div id="bar"></div></div>
+        <div class="ctrl"><button type="button" id="play">Pause</button><button type="button" id="again">Replay draft</button></div>
+      </div>
+    </div>
+    <div class="sides"><span class="us" id="usSide"></span><span class="them" id="themSide"></span></div>
+    <div class="phase"><div class="phase-name">First bans</div><div class="col" id="usBan"></div><div class="col" id="themBan"></div></div>
+    <div class="phase"><div class="phase-name">First picks</div><div class="col" id="usPick"></div><div class="col" id="themPick"></div></div>
+    <p class="later" id="later"></p>
+  </section>
+
+  <section class="sheet">
+    <h3 id="habitHead"></h3>
+    <div id="habits"></div>
+    <h3 style="margin-top:12px" id="fpHead"></h3>
+    <div class="fp num" id="fp"></div>
+    <h3 style="margin-top:12px" id="mapHead"></h3>
+    <div class="fbmap">
+      <svg id="rift" viewBox="0 0 150 150" role="img"></svg>
+      <p id="mapNote"></p>
+    </div>
+  </section>
+</div>
+
+<p class="src" id="src"></p>
+
+<dialog class="dlg" id="lockDlg">
+  <form method="dialog" id="lockForm">
+    <h2 id="dlgTitle"></h2>
+    <p>Enter the champions each team actually played. Fearless locks all of them for the rest of the series.
+       The plan's picks are filled in; change any that went differently.</p>
+    <div class="teams">
+      <div><h3 class="us-h" id="dlgUs"></h3><div id="dlgUsPicks"></div></div>
+      <div><h3 class="them-h" id="dlgThem"></h3><div id="dlgThemPicks"></div></div>
+    </div>
+    <div class="win">Winner
+      <label style="display:inline-flex;grid-template-columns:none;margin:0"><input type="radio" name="win" value="us"> <span id="dlgWinUs"></span></label>
+      <label style="display:inline-flex;grid-template-columns:none;margin:0"><input type="radio" name="win" value="them"> <span id="dlgWinThem"></span></label>
+    </div>
+    <div class="err" id="dlgErr" role="alert"></div>
+    <div class="row"><button type="button" id="dlgCancel">Cancel</button><button type="submit" class="primary" id="dlgOk">Lock it in</button></div>
+  </form>
+</dialog>
+<dialog class="dlg data" id="dataDlg" aria-labelledby="dataTitle">
+  <h2 id="dataTitle">Connect official data</h2>
+  <p id="dataStatus" role="status" aria-live="polite"></p>
+  <div class="meter" id="meter" role="progressbar" aria-labelledby="dataStatus" aria-valuemin="0" aria-valuemax="100"><div id="meterBar"></div></div>
+  <p class="privacy" id="dataPrivacy">Nothing is uploaded: the data goes from GitHub to this browser only.</p>
+  <div class="row"><button type="button" id="dataCancel">Cancel</button></div>
+</dialog>
+<dialog class="dlg help" id="helpDlg" aria-labelledby="helpTitle">
+  <h2 id="helpTitle">Keyboard shortcuts</h2>
+  <dl>
+    <dt><kbd>Space</kbd></dt><dd>Play or pause the replay</dd>
+    <dt><kbd>R</kbd></dt><dd>Replay from the start</dd>
+    <dt><kbd>L</kbd></dt><dd>Lock the game</dd>
+    <dt><kbd>C</kbd></dt><dd>Copy plan</dd>
+    <dt><kbd>P</kbd></dt><dd>Print sheet</dd>
+    <dt><kbd>?</kbd></dt><dd>Show or hide this card</dd>
+  </dl>
+  <h3 class="data-h">Data</h3>
+  <p class="data-links"><button type="button" class="link" id="loadFile">Load data.js</button>
+    <button type="button" class="link" id="clearCache">Clear cached data</button></p>
+  <p class="data-note" id="helpMsg">Drop a data.js built by pipeline/build.py onto the page, or load one here. It stays in your browser.</p>
+  <div class="row"><button type="button" id="helpClose">Close (Esc)</button></div>
+</dialog>
+<input type="file" id="fileIn" accept=".js,text/javascript" hidden>
+<datalist id="champList"></datalist>
+
+<script src="data.js"></script>
+<script>if (!window.DRAFTROOM) document.write('<script src="demo-data.js"><\/script>');</script>
+<script src="vendor/fzstd.js"></script>
+<script src="planner.js"></script>
+<script src="loader.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+// Draft Room planner: turns two team profiles and the champions fearless has
+// already locked into a plan for the next game. Every number it shows comes
+// from the profiles; nothing here is a model guess.
+(function (root) {
+  const ROLES = ['top', 'jungle', 'mid', 'adc', 'support'];
+  const ROLE_NAME = { top: 'Top', jungle: 'Jungle', mid: 'Mid', adc: 'Bot', support: 'Support' };
+  const ROLE_PERSON = { top: 'top laner', jungle: 'jungler', mid: 'mid laner', adc: 'bot laner', support: 'support' };
+  const PLACE = { top: 'top lane', mid: 'mid lane', bot: 'bot lane', jungle: 'jungle' };
+  // pro draft order: blue bans 1,3,5 and picks 7,10,11; red bans 2,4,6 and picks 8,9,12
+  const STEPS = { blue: { ban: [1, 3, 5], pick: [7, 10, 11] }, red: { ban: [2, 4, 6], pick: [8, 9, 12] } };
+
+  const mmss = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const wl = ([g, w]) => `${w}-${g - w}`;
+  const own = n => n + (n.endsWith('s') ? "'" : "'s");
+  const top = counter => Object.entries(counter).sort((a, b) => b[1] - a[1]);
+
+  // a team's champions still open, best record first (wins minus losses, then games)
+  function ranked(p, taken, minGames) {
+    const out = [];
+    for (const ro of ROLES)
+      for (const [ch, rec] of Object.entries(p.pool[ro] || {}))
+        if (!taken.has(ch) && rec[0] >= minGames) out.push({ ch, ro, rec, score: 2 * rec[1] - rec[0], g: rec[0] });
+    return out.sort((a, b) => b.score - a.score || b.g - a.g);
+  }
+  // fall back to thinner samples late in a series, when fearless has eaten the pool
+  function rankedAny(p, taken, mins) {
+    for (const m of mins) { const r = ranked(p, taken, m); if (r.length >= 3) return r; }
+    return ranked(p, taken, 1);
+  }
+
+  // How the opponent's picks are predicted. Each open champion scores the sum of three
+  // shares of the opponent's own games: played this season, played in their last
+  // `recent_n` games, and opened with as their first pick. The top 3 are named, one per role.
+  // The weights were chosen on the TUNE games of the backtest only (see docs/backtest.md).
+  const WEIGHTS = { season: 1, recent: 1, first: 1, perRole: 1 };
+
+  function predictPicks(p, taken, W) {
+    W = Object.assign({}, WEIGHTS, W);
+    const rec = {};
+    for (const ro of ROLES)
+      for (const [ch, r] of Object.entries(p.pool[ro] || {})) {
+        const x = rec[ch] || (rec[ch] = { ch, ro, g: 0, w: 0, best: 0 });
+        x.g += r[0]; x.w += r[1];
+        if (r[0] > x.best) { x.best = r[0]; x.ro = ro; }
+      }
+    const rn = p.recent_n || 0, last = p.recent || {};
+    const out = Object.values(rec).filter(x => !taken.has(x.ch)).map(x => {
+      const fp = (p.first_pick || {})[x.ch] || 0, rc = last[x.ch] || 0;
+      const score = W.season * x.g / p.n + W.recent * (rn ? rc / rn : 0) + W.first * fp / p.n;
+      return Object.assign(x, { score, rc, rn, fp });
+    }).sort((a, b) => b.score - a.score || b.g - a.g || (a.ch < b.ch ? -1 : 1));
+    const picked = [], used = {};
+    for (const x of out) {
+      if (picked.length === 3) break;
+      if ((used[x.ro] || 0) >= W.perRole) continue;
+      picked.push(x); used[x.ro] = (used[x.ro] || 0) + 1;
+    }
+    return picked;
+  }
+
+  function plan(D, usId, themId, locked, usBlue) {
+    const us = D.teams[usId], op = D.teams[themId];
+    const taken = new Set(locked);
+    const usSide = usBlue ? 'blue' : 'red', themSide = usBlue ? 'red' : 'blue';
+
+    // 1. our bans: their best champions still open; if none of them win, their most played
+    const pool = rankedAny(op, taken, [4, 3, 2]);
+    const good = pool.filter(c => c.score > 0), busy = [...pool].sort((a, b) => b.g - a.g || b.score - a.score);
+    const ourBans = [];
+    for (const c of [...good, ...busy]) {
+      if (ourBans.length === 3) break;
+      if (taken.has(c.ch)) continue;
+      ourBans.push({ champ: c.ch, rec: wl(c.rec), why: ourBans.length ? (op.players[c.ro] || '') : `${own(op.players[c.ro] || op.tag)} best`, win: c.rec[1] > c.rec[0] - c.rec[1] });
+      taken.add(c.ch);
+    }
+    // 2. their bans: what they ban most, still open
+    const theirBans = [];
+    for (const [ch, k] of top(op.bans)) {
+      if (theirBans.length === 3) break;
+      if (taken.has(ch)) continue;
+      theirBans.push({ champ: ch, why: theirBans.length ? `${k} of ${op.n}` : `their top ban, ${k} of ${op.n}` });
+      taken.add(ch);
+    }
+    // 3. our picks: best record, one per role; the first is the one they ban least
+    const cands = rankedAny(us, taken, [5, 3, 2]);
+    const first = cands.slice(0, 6).sort((a, b) => (op.bans[a.ch] || 0) - (op.bans[b.ch] || 0) || b.score - a.score)[0];
+    const picks = first ? [first] : [], roles = new Set(first ? [first.ro] : []);
+    for (const c of cands) if (picks.length < 3 && c !== first && !roles.has(c.ro)) { picks.push(c); roles.add(c.ro); }
+    picks.forEach(c => taken.add(c.ch));
+    // 4. their picks: the open champions they are most likely to play (see predictPicks)
+    const tp = predictPicks(op, taken);
+    tp.forEach(c => taken.add(c.ch));
+    const backups = rankedAny(us, taken, [5, 3, 2]).filter(c => !roles.has(c.ro)).slice(0, 2);
+
+    // 5. the game plan: the early edge where we lead by the most
+    const rate = (p, k) => Math.round(100 * (p.e[k] || 0) / p.n);
+    const edges = { drag: [rate(us, 'drag'), rate(op, 'drag')], fb: [rate(us, 'fb'), rate(op, 'fb')], grub: [rate(us, 'grub'), rate(op, 'grub')] };
+    const best = Object.keys(edges).sort((a, b) => (edges[b][0] - edges[b][1]) - (edges[a][0] - edges[a][1]))[0];
+    // fb_gave is a list of deaths in the full form, or counts only in the demo form
+    const gave = op.fb_gave, summary = !Array.isArray(gave), gaveN = summary ? gave.n : gave.length;
+    let roleCount = {}, vicNames = {}, vicZones = {};
+    if (summary) roleCount = gave.by_role || {};
+    else gave.forEach(v => { if (v[1]) roleCount[v[1]] = (roleCount[v[1]] || 0) + 1; });
+    const [vr, vrN] = top(roleCount)[0] || [null, 0];
+    if (summary) {
+      // counts by name are not split by role: take the role's main player when they appear, else the most frequent name
+      vicNames = gave.by_name || {};
+      vicZones = (gave.by_role_zone || {})[vr] || {};
+    } else
+      gave.filter(v => v[1] === vr).forEach(v => { vicNames[v[2]] = (vicNames[v[2]] || 0) + 1; vicZones[v[0]] = (vicZones[v[0]] || 0) + 1; });
+    const mainName = op.players[vr];
+    const vicName = (summary && mainName in vicNames ? mainName : (top(vicNames)[0] || [mainName])[0]);
+    const [vz, vzN] = top(vicZones)[0] || ['jungle', 0];
+    let line3, why3;
+    if (best === 'fb' && vr) {
+      const med = Array.isArray(us.fb_got) ? us.fb_got[Math.floor(us.fb_got.length / 2)] : us.fb_got.median;
+      line3 = `Kill ${vicName} in the ${PLACE[vz]} before ${mmss(Math.floor(med / 30) * 30 + 30)}`;
+      why3 = `Their ${ROLE_PERSON[vr]} is the first to die in <b>${vrN} of ${gaveN}</b> games, ${vzN} in the ${PLACE[vz]}. Half our first kills come by <b>${mmss(med)}</b>.`;
+    } else if (best === 'drag') {
+      line3 = `Take the first dragon before ${mmss(Math.floor(us.fd_avg / 30) * 30 + 30)}`;
+      why3 = `We get the first dragon in <b>${edges.drag[0]}%</b> of games, ${op.tag} in <b>${edges.drag[1]}%</b>. It falls at ${mmss(us.fd_avg)} in our games, ${mmss(op.fd_avg)} in theirs.`;
+    } else {
+      line3 = 'Take the first void grubs';
+      why3 = `We get the first grub in <b>${edges.grub[0]}%</b> of games, ${op.tag} in <b>${edges.grub[1]}%</b>.`;
+    }
+
+    // 6. the thin role: fewest proven champions left for us
+    const left = Object.fromEntries(ROLES.map(r => [r, Object.entries(us.pool[r] || {}).filter(([c, rec]) => rec[0] >= 5 && !locked.includes(c)).map(([c]) => c)]));
+    const thin = ROLES.reduce((a, b) => (left[b].length < left[a].length ? b : a));
+    const gone = Object.entries(us.pool[thin] || {}).filter(([c, rec]) => rec[0] >= 5 && locked.includes(c)).map(([c]) => c);
+
+    const h2h = D.series.filter(s => s.teams.includes(usId) && s.teams.includes(themId)).flatMap(s => s.games);
+    const step = (list, side, kind) => list.map((x, i) => Object.assign(x, { step: STEPS[side][kind][i] }));
+    const allBest = ourBans.every(b => b.win);
+    // their deaths, mirrored onto the side they play this game
+    const flip = v => (!v[5] || v[5] === themSide ? [v[3], v[4]] : [15000 - v[3], 14400 - v[4]]);
+
+    return {
+      usSide, themSide,
+      steps: {
+        us_ban: step(ourBans, usSide, 'ban'),
+        them_ban: step(theirBans, themSide, 'ban'),
+        us_pick: step(picks.map((c, i) => ({ champ: c.ch, rec: wl(c.rec), role: c.ro,
+          why: i ? (us.players[c.ro] || '') : (op.bans[c.ch] ? `${op.bans[c.ch]} ${op.tag} bans in ${op.n}` : `never banned by ${op.tag}`) })), usSide, 'pick'),
+        them_pick: step(tp.map(c => ({ champ: c.ch, rec: wl(op.pool[c.ro][c.ch]), role: c.ro,
+          why: `${op.players[c.ro] || ROLE_NAME[c.ro]}, ` + (c.rn && c.rc ? `${c.rc} of last ${c.rn} games` : `${c.g} of ${op.n} games`) +
+            (c.fp ? `, first pick ${c.fp}x` : '') })), themSide, 'pick'),
+      },
+      plan: {
+        bans: ourBans.map(b => b.champ), picks: picks.map(c => c.ch),
+        ban_why: `${own(op.name)} ${allBest ? 'three best picks' : 'most-played champions'} still open. They are ` +
+          ourBans.map(b => `<b>${b.rec}</b>`).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' on them this year.',
+        pick_why: first ? `${op.tag} banned ${first.ch} <b>${op.bans[first.ch] || 0} times in ${op.n} games</b>. ${us.players[first.ro]} is <b>${wl(first.rec)}</b> on it.` : '',
+        line3, why3,
+      },
+      backup: backups.map(c => [c.ch, wl(c.rec)]),
+      thin: `${ROLE_NAME[thin]} is thin.` + (gone.length ? ` ${gone.join(', ').replace(/, ([^,]*)$/, ' and $1')} ${gone.length === 1 ? 'is' : 'are'} gone.` : '') + ` Only ${left[thin].length} proven picks left.`,
+      pool: ROLES.map(ro => ({ role: ROLE_NAME[ro], champs: Object.entries(us.pool[ro] || {}).filter(([c]) => !locked.includes(c))
+        .sort((a, b) => b[1][0] - a[1][0]).slice(0, 3).map(([c, rec]) => [c, wl(rec)]) })),
+      habits: [
+        [mmss(op.fd_avg), `when the first dragon falls in their games, ${Math.abs(op.fd_avg - us.fd_avg)} seconds ${op.fd_avg > us.fd_avg ? 'later' : 'earlier'} than in ours`],
+        [`${op.e.fb_jungle || 0}/${op.e.fb || 0}`, 'of their first kills happen in the jungle'],
+        ...(h2h.length ? [[`${h2h.filter(g => g.winner === themId).length}/${h2h.length}`, 'games won against us this year']] : []),
+      ],
+      first_picks: top(op.first_pick).slice(0, 5),
+      fb_map: summary ? [] : gave.filter(v => v[3] != null).map(v => [...flip(v), v[1] === vr ? 1 : 0]),
+      fb_grid: summary ? { zones: gave.by_zone || {}, hit: vz } : null,
+      fb_victim: { name: vicName, role: ROLE_PERSON[vr] || '', n: vrN, of: gaveN },
+    };
+  }
+
+  // how deep each role stays for the rest of the series: proven champions (5+ games) not locked yet.
+  // open = still free after this game's planned picks; planned = proven champions this game's plan uses.
+  function outlook(D, usId, locked, plannedPicks) {
+    const us = D.teams[usId], gone = new Set(locked);
+    const used = new Set((plannedPicks || []).map(p => (typeof p === 'string' ? p : p.champ)));
+    return ROLES.map(role => {
+      const proven = Object.entries(us.pool[role] || {}).filter(([c, rec]) => rec[0] >= 5 && !gone.has(c)).map(([c]) => c);
+      return { role, open: proven.filter(c => !used.has(c)), planned: proven.filter(c => used.has(c)) };
+    });
+  }
+
+  const api = { plan, outlook, predictPicks, WEIGHTS, mmss, own, ROLES, ROLE_NAME };
+  if (typeof module !== 'undefined') module.exports = api; else root.Planner = api;
+})(this);
