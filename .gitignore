@@ -1,0 +1,11 @@
+# Sky's The Limit 2026 hackathon data: licensed, must not be committed
+stl-hackathon-2026-grid-starter/
+*.zst
+*.jsonl
+*.parquet
+*.sqlite
+*.duckdb
+# built from that data
+cache/
+web/data.js
+__pycache__/
