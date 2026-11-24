@@ -27,7 +27,7 @@
 <section class="plan" aria-label="Plan for the next game">
   <h2 id="planHead"></h2>
   <ol id="planList"></ol>
-  <div class="go"><button type="button" id="lockBtn"></button><button type="button" id="copyBtn" class="secondary">Copy plan</button><small id="lockNote"></small></div>
+  <div class="go"><button type="button" id="lockBtn"></button><div class="btns"><button type="button" id="copyBtn" class="secondary">Copy plan</button><button type="button" id="printBtn" class="secondary">Print sheet</button></div><small id="lockNote"></small></div>
 </section>
 
 <div class="board">
@@ -90,6 +90,18 @@
     <div class="err" id="dlgErr" role="alert"></div>
     <div class="row"><button type="button" id="dlgCancel">Cancel</button><button type="submit" class="primary" id="dlgOk">Lock it in</button></div>
   </form>
+</dialog>
+<dialog class="dlg help" id="helpDlg" aria-labelledby="helpTitle">
+  <h2 id="helpTitle">Keyboard shortcuts</h2>
+  <dl>
+    <dt><kbd>Space</kbd></dt><dd>Play or pause the replay</dd>
+    <dt><kbd>R</kbd></dt><dd>Replay from the start</dd>
+    <dt><kbd>L</kbd></dt><dd>Lock the game</dd>
+    <dt><kbd>C</kbd></dt><dd>Copy plan</dd>
+    <dt><kbd>P</kbd></dt><dd>Print sheet</dd>
+    <dt><kbd>?</kbd></dt><dd>Show or hide this card</dd>
+  </dl>
+  <div class="row"><button type="button" id="helpClose">Close (Esc)</button></div>
 </dialog>
 <datalist id="champList"></datalist>
 
