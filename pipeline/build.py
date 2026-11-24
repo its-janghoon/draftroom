@@ -10,6 +10,7 @@ import argparse, collections, csv, json
 from pathlib import Path
 
 ROLES = ['top', 'jungle', 'mid', 'adc', 'support']
+RECENT = 10   # "recent" means a team's last 10 games before the cutoff
 TAGS = {'Cloud9 Kia': 'C9', 'Team Liquid Alienware': 'TL', 'FlyQuest': 'FLY', 'LYON': 'LYON', 'Sentinels': 'SEN',
         'Shopify Rebellion': 'SR', 'Disguised': 'DSG', 'Dignitas': 'DIG', '100 Thieves': '100'}
 SHORT = {'Team Liquid Alienware': 'Team Liquid'}
@@ -31,49 +32,38 @@ def role_of(g, player):
     return 'jungle' if lane else None
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument('--data', default='../stl-hackathon-2026-grid-starter')
-    ap.add_argument('--games', default='cache/games.json')
-    ap.add_argument('--out', default='web/data.js')
-    ap.add_argument('--league', default='LCS')
-    ap.add_argument('--since', default='2026-01-01')
-    args = ap.parse_args()
-    data = Path(args.data)
-    G = json.load(open(args.games))
-    gi = {g['game_id']: g for g in G}
-
-    roster = collections.defaultdict(list)
-    for r in csv.DictReader(open(data / 'meta' / 'rosters.csv')):
-        if r['title'] == 'lol':
-            roster[r['game_id']].append(r)
-    names = {r['team_id']: r['name'] for r in csv.DictReader(open(data / 'meta' / 'teams.csv')) if r['title'] == 'lol'}
-    champions = sorted({r['name'] for r in csv.DictReader(open(data / 'meta' / 'characters.csv')) if r['title'] == 'lol'})
-
-    # each player's main role, voted over every game they played
+def vote_roles(games, roster):
+    """Each player's main role, voted over the given games."""
     votes = collections.defaultdict(collections.Counter)
-    for gid, rows in roster.items():
-        if gid in gi:
-            for r in rows:
-                ro = role_of(gi[gid], r['player_name'])
-                if ro:
-                    votes[r['player_id']][ro] += 1
-    main_role = {p: c.most_common(1)[0][0] for p, c in votes.items()}
+    for g in games:
+        for r in roster.get(g['game_id'], []):
+            ro = role_of(g, r['player_name'])
+            if ro:
+                votes[r['player_id']][ro] += 1
+    return {p: c.most_common(1)[0][0] for p, c in votes.items()}
 
-    season = [g for g in G if g['date'] >= args.since and g.get('winner') and args.league in g['event']]
+
+def build_profiles(games, roster, main_role, names, min_games=10, recent=RECENT):
+    """One profile per team that has at least min_games of the given games.
+    'recent' counts, per champion, the games it was played in the team's last `recent` games."""
     by_team = collections.defaultdict(list)
-    for g in season:
-        for t in {d[2] for d in g['draft']}:
+    for g in sorted(games, key=lambda g: g['date']):   # stable: oldest first
+        for t in dict.fromkeys(d[2] for d in g['draft']):
             by_team[t].append(g)
 
     teams = {}
     for tid, tg in by_team.items():
-        if len(tg) < 10:
+        if len(tg) < min_games:
             continue
         pool = {r: collections.defaultdict(lambda: [0, 0]) for r in ROLES}
         champ_role, players = {}, collections.defaultdict(collections.Counter)
         bans, first_pick = collections.Counter(), collections.Counter()
         e = collections.Counter(); fd = []; fb_got = []; fb_gave = []
+        last = collections.Counter()
+        for g in tg[-recent:]:
+            for r in roster.get(g['game_id'], []):
+                if r['team_id'] == tid and main_role.get(r['player_id']):
+                    last[r['character_name']] += 1
         for g in tg:
             won = g['winner'] == tid
             side = next((r['side'] for r in roster.get(g['game_id'], []) if r['team_id'] == tid), None)
@@ -107,12 +97,40 @@ def main():
         name = names.get(tid, tid)
         teams[tid] = {
             'id': tid, 'name': SHORT.get(name, name), 'tag': TAGS.get(name, name[:3].upper()), 'n': len(tg),
+            'recent': dict(last), 'recent_n': min(recent, len(tg)),
             'players': {r: players[r].most_common(1)[0][0] for r in ROLES if players[r]},
             'pool': {r: {c: v for c, v in pool[r].items()} for r in ROLES},
             'role': champ_role, 'bans': dict(bans), 'first_pick': dict(first_pick),
             'e': dict(e), 'fd_avg': round(sum(fd) / len(fd)) if fd else None,
             'fb_got': sorted(fb_got), 'fb_gave': fb_gave,
         }
+    return teams
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--data', default='../stl-hackathon-2026-grid-starter')
+    ap.add_argument('--games', default='cache/games.json')
+    ap.add_argument('--out', default='web/data.js')
+    ap.add_argument('--league', default='LCS')
+    ap.add_argument('--since', default='2026-01-01')
+    args = ap.parse_args()
+    data = Path(args.data)
+    G = json.load(open(args.games))
+    gi = {g['game_id']: g for g in G}
+
+    roster = collections.defaultdict(list)
+    for r in csv.DictReader(open(data / 'meta' / 'rosters.csv')):
+        if r['title'] == 'lol':
+            roster[r['game_id']].append(r)
+    names = {r['team_id']: r['name'] for r in csv.DictReader(open(data / 'meta' / 'teams.csv')) if r['title'] == 'lol'}
+    champions = sorted({r['name'] for r in csv.DictReader(open(data / 'meta' / 'characters.csv')) if r['title'] == 'lol'})
+
+    # each player's main role, voted over every game they played
+    main_role = vote_roles([gi[gid] for gid in roster if gid in gi], roster)
+
+    season = [g for g in G if g['date'] >= args.since and g.get('winner') and args.league in g['event']]
+    teams = build_profiles(season, roster, main_role, names, 10)
 
     # the real series, so a coach can load one and replay it
     series = collections.defaultdict(list)
