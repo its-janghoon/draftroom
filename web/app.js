@@ -132,7 +132,8 @@
     }).join('');
     drawMap(op);
     const real = S.real && D.series.find(s => s.id === S.real);
-    $('src').textContent = `Official GRID data, ${D.season}. ${us.name} ${us.n} games, ${op.name} ${op.n} games.` + (real ? ` Game 1 from the ${real.date} series.` : '');
+    $('src').innerHTML = esc(`Official GRID data, ${D.season}. ${us.name} ${us.n} games, ${op.name} ${op.n} games.` + (real ? ` Game 1 from the ${real.date} series.` : '')) +
+      ' <span class="keys-hint">Press ? for shortcuts</span>';
   }
 
   // fearless outlook: one dot per proven champion still open after this game's picks, hollow if the plan uses it
@@ -266,7 +267,7 @@
     lines = [...document.querySelectorAll('.plan-line')];
   }
   function render() {
-    const i = Math.min(Math.floor(t / STEP), order.length), local = t - i * STEP;
+    const i = t >= order.length * STEP ? order.length : Math.floor(t / STEP), local = t - i * STEP;   // exact end check: 12 * 1.9 / 1.9 floors to 11
     order.forEach((o, k) => {
       const isLocked = k < i || (k === i && local >= LOCK_AT), active = k === i && !isLocked;
       o.slot.classList.toggle('pending', k > i);
@@ -322,6 +323,35 @@
   function pause() { running = false; playBtn.textContent = 'Play'; }
   playBtn.onclick = () => (running ? pause() : play());
   $('again').onclick = () => { t = 0; done = false; play(); };
+
+  // ---------- print sheet: finish the replay so every slot is locked, then print ----------
+  function finishReplay() { pause(); t = order.length * STEP; done = true; render(); }
+  function printSheet() { finishReplay(); window.print(); }
+  $('printBtn').onclick = printSheet;
+  window.addEventListener('beforeprint', finishReplay);   // Ctrl+P from the browser menu too
+
+  // ---------- keyboard shortcuts ----------
+  const helpDlg = $('helpDlg');
+  $('helpClose').onclick = () => helpDlg.close();
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+    const el = e.target, tag = el && el.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || (el && el.isContentEditable) || (el && el.closest && el.closest('#lockDlg'))) return;
+    if ($('lockDlg').open) return;
+    if (e.key === '?') { e.preventDefault(); helpDlg.open ? helpDlg.close() : helpDlg.showModal(); return; }
+    if (helpDlg.open) return;
+    if (e.key === ' ') {
+      if (tag === 'BUTTON') return;          // a focused button already handles Space itself
+      e.preventDefault(); running ? pause() : play();
+      return;
+    }
+    if (e.repeat) return;
+    const k = e.key.toLowerCase();
+    if (k === 'r') { e.preventDefault(); t = 0; done = false; play(); }
+    else if (k === 'l') { e.preventDefault(); if (!$('lockBtn').disabled) openLock(); }
+    else if (k === 'c') { e.preventDefault(); if (!$('copyBtn').disabled) copyPlan(); }
+    else if (k === 'p') { e.preventDefault(); printSheet(); }
+  });
 
   function show(autoplay) {
     pause(); save(); fill(); build();
