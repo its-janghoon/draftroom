@@ -1,7 +1,7 @@
 :root {
     --paper: #0B1118; --sheet: #121A24; --raise: #182230; --ink: #E8EDF2; --pencil: #8F9BAA; --rule: #243142;
-    --c9: #3DB4F0; --c9-wash: #12293B; --tl: #C3CEDC; --tl-wash: #1C2633; --ban: #F0695D; --ban-wash: #2A1719;
-    --gold: #D8B26A;
+    --c9: #1E8BFF; --c9-wash: #12293B; --tl: #C3CEDC; --tl-wash: #1C2633; --ban: #FF3030; --ban-wash: #2A1719;
+    --gold: #FFD000;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { max-width: 1440px; margin: 0 auto; background: var(--paper); color: var(--ink);
