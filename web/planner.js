@@ -28,6 +28,36 @@
     return ranked(p, taken, 1);
   }
 
+  // How the opponent's picks are predicted. Each open champion scores the sum of three
+  // shares of the opponent's own games: played this season, played in their last
+  // `recent_n` games, and opened with as their first pick. The top 3 are named, one per role.
+  // The weights were chosen on the TUNE games of the backtest only (see docs/backtest.md).
+  const WEIGHTS = { season: 1, recent: 1, first: 1, perRole: 1 };
+
+  function predictPicks(p, taken, W) {
+    W = Object.assign({}, WEIGHTS, W);
+    const rec = {};
+    for (const ro of ROLES)
+      for (const [ch, r] of Object.entries(p.pool[ro] || {})) {
+        const x = rec[ch] || (rec[ch] = { ch, ro, g: 0, w: 0, best: 0 });
+        x.g += r[0]; x.w += r[1];
+        if (r[0] > x.best) { x.best = r[0]; x.ro = ro; }
+      }
+    const rn = p.recent_n || 0, last = p.recent || {};
+    const out = Object.values(rec).filter(x => !taken.has(x.ch)).map(x => {
+      const fp = (p.first_pick || {})[x.ch] || 0, rc = last[x.ch] || 0;
+      const score = W.season * x.g / p.n + W.recent * (rn ? rc / rn : 0) + W.first * fp / p.n;
+      return Object.assign(x, { score, rc, rn, fp });
+    }).sort((a, b) => b.score - a.score || b.g - a.g || (a.ch < b.ch ? -1 : 1));
+    const picked = [], used = {};
+    for (const x of out) {
+      if (picked.length === 3) break;
+      if ((used[x.ro] || 0) >= W.perRole) continue;
+      picked.push(x); used[x.ro] = (used[x.ro] || 0) + 1;
+    }
+    return picked;
+  }
+
   function plan(D, usId, themId, locked, usBlue) {
     const us = D.teams[usId], op = D.teams[themId];
     const taken = new Set(locked);
@@ -57,19 +87,8 @@
     const picks = first ? [first] : [], roles = new Set(first ? [first.ro] : []);
     for (const c of cands) if (picks.length < 3 && c !== first && !roles.has(c.ro)) { picks.push(c); roles.add(c.ro); }
     picks.forEach(c => taken.add(c.ch));
-    // 4. their picks: their first-pick habit, then what they play most, one per role
-    const tp = [], troles = new Set();
-    const fpRank = Object.entries(op.first_pick).sort((a, b) => b[1] - a[1] ||
-      ((op.pool[op.role[b[0]]] || {})[b[0]] || [0, 0])[1] - ((op.pool[op.role[a[0]]] || {})[a[0]] || [0, 0])[1]);
-    for (const [ch] of fpRank) {
-      const ro = op.role[ch];
-      if (!taken.has(ch) && ro && op.pool[ro][ch][0] >= 3) { tp.push({ ch, ro, note: 'first-pick habit' }); troles.add(ro); break; }
-    }
-    const byPlay = ROLES.flatMap(ro => Object.entries(op.pool[ro] || {}).map(([ch, rec]) => ({ ch, ro, g: rec[0] }))).sort((a, b) => b.g - a.g);
-    for (const c of byPlay) {
-      if (tp.length === 3) break;
-      if (!taken.has(c.ch) && !troles.has(c.ro) && !tp.some(x => x.ch === c.ch)) { tp.push(c); troles.add(c.ro); }
-    }
+    // 4. their picks: the open champions they are most likely to play (see predictPicks)
+    const tp = predictPicks(op, taken);
     tp.forEach(c => taken.add(c.ch));
     const backups = rankedAny(us, taken, [5, 3, 2]).filter(c => !roles.has(c.ro)).slice(0, 2);
 
@@ -117,7 +136,8 @@
         us_pick: step(picks.map((c, i) => ({ champ: c.ch, rec: wl(c.rec), role: c.ro,
           why: i ? (us.players[c.ro] || '') : (op.bans[c.ch] ? `${op.bans[c.ch]} ${op.tag} bans in ${op.n}` : `never banned by ${op.tag}`) })), usSide, 'pick'),
         them_pick: step(tp.map(c => ({ champ: c.ch, rec: wl(op.pool[c.ro][c.ch]), role: c.ro,
-          why: (op.players[c.ro] || '') + (c.note ? ', ' + c.note : '') })), themSide, 'pick'),
+          why: `${op.players[c.ro] || ROLE_NAME[c.ro]}, ` + (c.rn && c.rc ? `${c.rc} of last ${c.rn} games` : `${c.g} of ${op.n} games`) +
+            (c.fp ? `, first pick ${c.fp}x` : '') })), themSide, 'pick'),
       },
       plan: {
         bans: ourBans.map(b => b.champ), picks: picks.map(c => c.ch),
@@ -152,6 +172,6 @@
     });
   }
 
-  const api = { plan, outlook, mmss, own, ROLES, ROLE_NAME };
+  const api = { plan, outlook, predictPicks, WEIGHTS, mmss, own, ROLES, ROLE_NAME };
   if (typeof module !== 'undefined') module.exports = api; else root.Planner = api;
 })(this);

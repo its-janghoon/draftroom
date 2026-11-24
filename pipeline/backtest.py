@@ -11,7 +11,7 @@ data, so it stays in cache/, which git ignores). Score it with tests/backtest.js
 import argparse, collections, csv, json
 from pathlib import Path
 
-from build import build_profiles, vote_roles
+from build import RECENT, build_profiles, vote_roles
 
 
 def picks_of(g, tid):
@@ -30,6 +30,7 @@ def main():
     ap.add_argument('--league', default='LCS')
     ap.add_argument('--since', default='2026-01-01')
     ap.add_argument('--min-games', type=int, default=10)
+    ap.add_argument('--recent', type=int, default=RECENT, help='size of the "recent games" window')
     args = ap.parse_args()
     data = Path(args.data)
     G = json.load(open(args.games))
@@ -54,7 +55,7 @@ def main():
         if date not in cutoff:
             prior = [g for g in league if g['date'] >= args.since and g['date'] < date and g.get('winner')]
             roles = vote_roles(prior, roster)
-            cutoff[date] = build_profiles(prior, roster, roles, names, args.min_games)
+            cutoff[date] = build_profiles(prior, roster, roles, names, args.min_games, args.recent)
         return cutoff[date]
 
     cases, skipped = [], collections.Counter()
@@ -86,7 +87,7 @@ def main():
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    meta = {'league': args.league, 'since': args.since, 'min_games': args.min_games,
+    meta = {'league': args.league, 'since': args.since, 'min_games': args.min_games, 'recent': args.recent,
             'league_games_in_range': sum(1 for g in league if g['date'] >= args.since),
             'skipped': dict(skipped)}
     out.write_text(json.dumps({'meta': meta, 'cases': cases}, ensure_ascii=False))

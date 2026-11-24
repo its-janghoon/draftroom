@@ -10,6 +10,7 @@ import argparse, collections, csv, json
 from pathlib import Path
 
 ROLES = ['top', 'jungle', 'mid', 'adc', 'support']
+RECENT = 10   # "recent" means a team's last 10 games before the cutoff
 TAGS = {'Cloud9 Kia': 'C9', 'Team Liquid Alienware': 'TL', 'FlyQuest': 'FLY', 'LYON': 'LYON', 'Sentinels': 'SEN',
         'Shopify Rebellion': 'SR', 'Disguised': 'DSG', 'Dignitas': 'DIG', '100 Thieves': '100'}
 SHORT = {'Team Liquid Alienware': 'Team Liquid'}
@@ -42,10 +43,11 @@ def vote_roles(games, roster):
     return {p: c.most_common(1)[0][0] for p, c in votes.items()}
 
 
-def build_profiles(games, roster, main_role, names, min_games=10):
-    """One profile per team that has at least min_games of the given games."""
+def build_profiles(games, roster, main_role, names, min_games=10, recent=RECENT):
+    """One profile per team that has at least min_games of the given games.
+    'recent' counts, per champion, the games it was played in the team's last `recent` games."""
     by_team = collections.defaultdict(list)
-    for g in games:
+    for g in sorted(games, key=lambda g: g['date']):   # stable: oldest first
         for t in dict.fromkeys(d[2] for d in g['draft']):
             by_team[t].append(g)
 
@@ -57,6 +59,11 @@ def build_profiles(games, roster, main_role, names, min_games=10):
         champ_role, players = {}, collections.defaultdict(collections.Counter)
         bans, first_pick = collections.Counter(), collections.Counter()
         e = collections.Counter(); fd = []; fb_got = []; fb_gave = []
+        last = collections.Counter()
+        for g in tg[-recent:]:
+            for r in roster.get(g['game_id'], []):
+                if r['team_id'] == tid and main_role.get(r['player_id']):
+                    last[r['character_name']] += 1
         for g in tg:
             won = g['winner'] == tid
             side = next((r['side'] for r in roster.get(g['game_id'], []) if r['team_id'] == tid), None)
@@ -90,6 +97,7 @@ def build_profiles(games, roster, main_role, names, min_games=10):
         name = names.get(tid, tid)
         teams[tid] = {
             'id': tid, 'name': SHORT.get(name, name), 'tag': TAGS.get(name, name[:3].upper()), 'n': len(tg),
+            'recent': dict(last), 'recent_n': min(recent, len(tg)),
             'players': {r: players[r].most_common(1)[0][0] for r in ROLES if players[r]},
             'pool': {r: {c: v for c, v in pool[r].items()} for r in ROLES},
             'role': champ_role, 'bans': dict(bans), 'first_pick': dict(first_pick),
