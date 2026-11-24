@@ -219,6 +219,8 @@
 .games-strip button:disabled { cursor: default; opacity: .5; }
 .empty { color: var(--pencil); font-size: 13px; }
 .plan button:disabled { opacity: .5; cursor: default; }
+.plan .go button.secondary { font-size: 14px; background: transparent; color: #fff; border: 1px solid #AAB3BE; padding: 6px 14px; }
+.plan .go button.secondary:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 /* lock-in dialog: what was actually played */
 .dlg { margin: auto; border: 0; border-radius: 8px; padding: 22px 24px; width: 640px; color: var(--ink); box-shadow: 0 12px 40px rgba(23,32,43,.25); }
