@@ -5,6 +5,8 @@ data.js holds aggregates derived from licensed data. It stays out of git;
 judges build it from their own copy of the starter repo.
 
     python pipeline/build.py --data ../stl-hackathon-2026-grid-starter
+
+    python pipeline/build.py --public     # web/demo-data.js: season aggregates only, safe to commit
 """
 import argparse, collections, csv, json
 from pathlib import Path
@@ -111,15 +113,40 @@ def build_profiles(games, roster, main_role, names, min_games=10, recent=RECENT)
     return teams
 
 
+def summarize(t):
+    """The public form of a profile: fb_got and fb_gave shrink to counts, so no per-game row,
+    position or time series is left. Everything else in a profile is already a count or an average."""
+    got, gave = t['fb_got'], t['fb_gave']
+    by_role, by_name, by_zone = collections.Counter(), collections.Counter(), collections.Counter()
+    by_role_zone = collections.defaultdict(collections.Counter)
+    for zone, role, victim, *_ in gave:
+        if role:
+            by_role[role] += 1
+        if victim:
+            by_name[victim] += 1
+        if zone:
+            by_zone[zone] += 1
+            if role:
+                by_role_zone[role][zone] += 1
+    p = dict(t)
+    p['fb_got'] = {'n': len(got), 'median': got[len(got) // 2] if got else None}
+    p['fb_gave'] = {'n': len(gave), 'by_role': dict(by_role), 'by_name': dict(by_name), 'by_zone': dict(by_zone),
+                    'by_role_zone': {r: dict(c) for r, c in by_role_zone.items()}}
+    return p
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--data', default='../stl-hackathon-2026-grid-starter')
     ap.add_argument('--games', default='cache/games.json')
-    ap.add_argument('--out', default='web/data.js')
+    ap.add_argument('--out', default=None, help='default: web/data.js, or web/demo-data.js with --public')
     ap.add_argument('--league', default='LCS')
     ap.add_argument('--since', default='2026-01-01')
     ap.add_argument('--anon', action='store_true', help='demo build: made-up names for every team but Cloud9')
+    ap.add_argument('--public', action='store_true',
+                    help='write web/demo-data.js: season aggregates only (no series, no positions, no per-game rows)')
     args = ap.parse_args()
+    args.out = args.out or ('web/demo-data.js' if args.public else 'web/data.js')
     data = Path(args.data)
     G = json.load(open(args.games))
     gi = {g['game_id']: g for g in G}
@@ -169,10 +196,17 @@ def main():
                 t['name'], t['tag'] = next(fake)
 
     payload = {'season': f'{args.league} {args.since[:4]}', 'champions': champions, 'teams': teams, 'series': out_series}
+    if args.public:
+        payload['teams'] = {tid: summarize(t) for tid, t in teams.items()}
+        payload['series'] = []
+        payload['source'] = 'demo'
+        header = '// Built by pipeline/build.py --public: season aggregates only (counts, records, averages). No match rows.\n'
+    else:
+        header = '// Built by pipeline/build.py from the GRID starter data. Do not commit.\n'
     out = Path(args.out)
-    out.write_text('// Built by pipeline/build.py from the GRID starter data. Do not commit.\n'
+    out.write_text(header +
                    'window.DRAFTROOM = ' + json.dumps(payload, ensure_ascii=False, separators=(',', ':')) + ';\n')
-    print(f"{len(teams)} teams, {len(out_series)} series -> {out} ({out.stat().st_size // 1024} KB)")
+    print(f"{len(teams)} teams, {len(payload['series'])} series -> {out} ({out.stat().st_size // 1024} KB)")
 
 
 if __name__ == '__main__':

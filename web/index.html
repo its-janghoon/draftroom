@@ -22,6 +22,7 @@
     <div class="games-strip" id="strip" aria-label="Games in the series"></div>
     <select id="realSel" aria-label="Load a real series"></select>
     <button type="button" id="newSeries">New series</button>
+    <button type="button" id="connectBtn" class="secondary">Connect official data</button>
   </div>
 </div>
 
@@ -92,6 +93,13 @@
     <div class="row"><button type="button" id="dlgCancel">Cancel</button><button type="submit" class="primary" id="dlgOk">Lock it in</button></div>
   </form>
 </dialog>
+<dialog class="dlg data" id="dataDlg" aria-labelledby="dataTitle">
+  <h2 id="dataTitle">Connect official data</h2>
+  <p id="dataStatus" role="status" aria-live="polite"></p>
+  <div class="meter" id="meter" role="progressbar" aria-labelledby="dataStatus" aria-valuemin="0" aria-valuemax="100"><div id="meterBar"></div></div>
+  <p class="privacy" id="dataPrivacy">Nothing is uploaded: the data goes from GitHub to this browser only.</p>
+  <div class="row"><button type="button" id="dataCancel">Cancel</button></div>
+</dialog>
 <dialog class="dlg help" id="helpDlg" aria-labelledby="helpTitle">
   <h2 id="helpTitle">Keyboard shortcuts</h2>
   <dl>
@@ -102,12 +110,20 @@
     <dt><kbd>P</kbd></dt><dd>Print sheet</dd>
     <dt><kbd>?</kbd></dt><dd>Show or hide this card</dd>
   </dl>
+  <h3 class="data-h">Data</h3>
+  <p class="data-links"><button type="button" class="link" id="loadFile">Load data.js</button>
+    <button type="button" class="link" id="clearCache">Clear cached data</button></p>
+  <p class="data-note" id="helpMsg">Drop a data.js built by pipeline/build.py onto the page, or load one here. It stays in your browser.</p>
   <div class="row"><button type="button" id="helpClose">Close (Esc)</button></div>
 </dialog>
+<input type="file" id="fileIn" accept=".js,text/javascript" hidden>
 <datalist id="champList"></datalist>
 
 <script src="data.js"></script>
+<script>if (!window.DRAFTROOM) document.write('<script src="demo-data.js"><\/script>');</script>
+<script src="vendor/fzstd.js"></script>
 <script src="planner.js"></script>
+<script src="loader.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
