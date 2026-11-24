@@ -4,6 +4,18 @@ A fearless draft planner for League of Legends coaches. It reads official GRID m
 
 Built for the Cloud9 x JetBrains "Sky's The Limit" hackathon, Category 2 (League of Legends macro scouting and draft management).
 
+## Live demo
+
+https://its-janghoon.github.io/draftroom/
+
+The site is plain files on GitHub Pages. **No match data is hosted by this project.** It works in three layers, from instant to complete:
+
+1. **Instant demo.** The page opens on `web/demo-data.js`, which holds season totals only: records, counts and averages for each team. There are no individual games in it, so "Replay a real series" is hidden and the first-blood map shows how many first deaths happened in each area (top lane, mid, bot lane, jungle) instead of dots.
+2. **Connect official data.** The button in the header downloads the official starter data straight from GitHub (`cloud9esports/stl-hackathon-2026-grid-starter`) into your browser, only the LCS 2026 games it needs, and builds the full data there. You see the progress and can cancel. The result is saved in your browser, keyed by the starter repo's latest commit, so a reload is instant. *Clear cached data* in the help card (press `?`) removes it. Nothing is uploaded anywhere: the data goes from GitHub to your browser only.
+3. **Offline upload.** If you built `web/data.js` yourself with `pipeline/build.py`, drop it onto the page or use *Load data.js* in the help card. The file is read in your browser and never leaves it.
+
+To make the demo file: `python pipeline/build.py --public`. It is the only data file that is committed.
+
 ## What a coach sees
 
 - **The plan for the next game, in order.** Three lines at the top of the screen: the three bans, the picks, and one early-game goal (for example "Kill Gryffinn in the jungle before 5:00"). Each line carries its reason in numbers.
@@ -48,13 +60,19 @@ open web/index.html        # or: python -m http.server 8000 --bind 127.0.0.1 --d
 
 `pipeline/build.py --league LEC --since 2026-01-01` builds the same app for another league.
 
+`pipeline/build.py --public` writes `web/demo-data.js` (season totals only, safe to commit).
+
 `pipeline/build.py --anon` builds a demo copy where every team but Cloud9 gets a made-up name (Team Acme, Team Birch, ...). The demo video uses it.
 
 Check the planner on every team pair through a full Bo5:
 
 ```bash
-node tests/planner.test.js
+node tests/planner.test.js                 # on web/data.js and web/demo-data.js
+node tests/loader.check.js                 # the browser loader against the Python pipeline (Node 18+)
+python tests/fit.py                        # one-screen check; DATA=demo for the demo file
 ```
+
+`tests/loader.check.js` runs `web/loader.js` on `../stl-hackathon-2026-grid-starter` and prints `loader matches build.py` when the teams, games per team and every pool record equal `web/data.js`.
 
 ## Backtest
 
@@ -75,6 +93,9 @@ Results and what they do and do not mean: [docs/backtest.md](docs/backtest.md).
 | `pipeline/build.py` | Builds team profiles and the real series into `web/data.js`. |
 | `pipeline/backtest.py` | Builds the backtest cases (profiles from prior games only) into `cache/backtest-cases.json`. |
 | `web/planner.js` | The plan rules above. Plain JavaScript, no dependencies, also runs in Node. |
+| `web/loader.js` | Browser port of `extract.py` and `build.py`: downloads the official data, builds the full data, caches it in IndexedDB. Keep the rules identical to the Python scripts. |
+| `web/vendor/fzstd.js` | MIT zstd decoder (the only third-party code). |
+| `web/demo-data.js` | Season totals only, committed. `web/data.js` is never committed. |
 | `web/app.js` | Series state, the lock-in dialog and the champion-select replay. The series is kept in the browser's local storage. |
 | `tests/planner.test.js` | Planner checks. |
 | `docs/ai-workflow.md` | How Junie CLI built the later features, task by task. |
@@ -84,7 +105,7 @@ Roles are inferred from where each player stood between 1:30 and 5:30 and their 
 
 ## Data
 
-The match data is © GRID eSports GmbH and Riot Games, Inc. and is licensed only for building hackathon projects. It is not in this repository: `cache/` and `web/data.js` are built from your own copy and are ignored by git. The map in the app is drawn from plain shapes, with no Riot artwork.
+The match data is © GRID eSports GmbH and Riot Games, Inc. and is licensed only for building hackathon projects. It is not in this repository: `cache/` and `web/data.js` are built from your own copy and are ignored by git. The only data file in git is `web/demo-data.js`, which has season totals (counts, records, averages) and no per-game rows. The map in the app is drawn from plain shapes, with no Riot artwork.
 
 League of Legends is a trademark of Riot Games, Inc. This project is not endorsed by Riot Games.
 

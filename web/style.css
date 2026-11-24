@@ -99,6 +99,11 @@
                 transition: opacity .3s ease-out, transform .35s ease-out; }
   .fbmap .dot.hit { fill: var(--ban); stroke: var(--paper); stroke-width: .8; }
   .fbmap.show .dot { opacity: .9; transform: scale(1); }
+  .fbmap .grid { opacity: 0; transition: opacity .4s ease-out; }
+  .fbmap.show .grid { opacity: 1; }
+  .fbmap .cell { fill: var(--pencil); }
+  .fbmap .cell.hit { fill: var(--ban); }
+  .fbmap .cnt { fill: var(--ink); font: 700 17px "Barlow Condensed", sans-serif; text-anchor: middle; paint-order: stroke; stroke: var(--paper); stroke-width: 2.5px; }
   .fbmap p { font-size: 13.5px; line-height: 1.4; }
   .fbmap .key { display: block; margin-top: 6px; color: var(--pencil); font-size: 12.5px; }
   .fbmap .k { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--pencil); margin: 0 4px 0 8px; }
@@ -234,7 +239,7 @@
     .used-h { margin: 3px 0 2px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .slot, .slot.locked, .slot.active, .plan-line, .slot.locked::before, .fbmap .dot { animation: none !important; transition: none !important; }
+    .slot, .slot.locked, .slot.active, .plan-line, .slot.locked::before, .fbmap .dot, .fbmap .grid { animation: none !important; transition: none !important; }
   }
 
 /* series controls */
@@ -270,6 +275,26 @@
 .dlg .err { color: var(--ban); font-size: 13px; min-height: 18px; }
 .dlg .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .dlg .row .primary { background: var(--c9); border-color: var(--c9); color: var(--paper); font-weight: 600; }
+
+/* connect official data, link buttons, the download dialog */
+[hidden] { display: none !important; }
+.setup button { white-space: nowrap; }
+.setup button.secondary { background: transparent; color: var(--c9); border-color: var(--c9); }
+.top { gap: 16px; }
+.top .title { flex: 1 1 auto; }
+.top .title .game { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.setup { flex: none; gap: 8px; }
+button.link, .dlg button.link { background: none; border: 0; padding: 0; color: var(--c9); font: inherit; text-decoration: underline; cursor: pointer; border-radius: 2px; }
+button.link:focus-visible { outline: 2px solid var(--c9); outline-offset: 2px; }
+.dlg.data { width: 440px; }
+.dlg .meter { height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; margin: 0 0 12px; }
+.dlg .meter div { height: 100%; width: 100%; background: var(--c9); transform-origin: left; transform: scaleX(0); transition: transform .2s; }
+.dlg .privacy { font-size: 12.5px; margin-bottom: 4px; }
+.dlg #dataStatus { color: var(--ink); font-size: 15px; margin-bottom: 10px; }
+.help .data-h { margin: 12px 0 4px; }
+.help .data-links { display: flex; gap: 16px; margin-bottom: 4px; }
+.help .data-note { font-size: 12.5px; margin-bottom: 0; }
+body.drop { outline: 3px dashed var(--c9); outline-offset: -8px; }
 
 .top .title { min-width: 0; }
 .top .title .match { white-space: nowrap; }
@@ -356,6 +381,9 @@
   .fbmap svg { width: 96px; height: 96px; }
   .fbmap .dot { opacity: .9 !important; transform: scale(1) !important; fill: #666; }
   .fbmap .dot.hit { fill: #000; stroke: #fff; }
+  .fbmap .grid { opacity: 1 !important; }
+  .fbmap .cell { fill: #666; } .fbmap .cell.hit { fill: #000; }
+  .fbmap .cnt { fill: #000; stroke: #fff; }
   .fbmap .g { fill: #fff; stroke: #000; stroke-width: 1; } .fbmap .river { stroke: #ddd; } .fbmap .lane { stroke: #999; }
   .fbmap p, .fbmap .key { font-size: 10.5px; }
   .src { margin-top: 4px; font-size: 10px; }

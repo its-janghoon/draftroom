@@ -1,7 +1,8 @@
 // Draft Room UI: a fearless series, game by game. The coach locks in what was
 // actually played, and the plan for the next game is rebuilt from the data.
 (() => {
-  const D = window.DRAFTROOM, P = window.Planner;
+  let D = window.DRAFTROOM;
+  const P = window.Planner;
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const list = (xs, cls) => xs.map((x, i) => (i && i === xs.length - 1 ? ' and ' : i ? ', ' : '') + `<span class="${cls}">${esc(x)}</span>`).join('');
@@ -9,10 +10,10 @@
   const KEY = 'draftroom.series.v1';
   const ROLE_LABEL = ['Top', 'Jungle', 'Mid', 'Bot', 'Support'];
 
-  if (!D) { document.body.innerHTML = '<p style="padding:40px">web/data.js is missing. Run <code>python pipeline/build.py</code> first (see README).</p>'; return; }
+  if (!D) { document.body.innerHTML = '<p style="padding:40px">web/demo-data.js is missing. Run <code>python pipeline/build.py --public</code> (see README).</p>'; return; }
 
   // ---------- series state ----------
-  const C9 = Object.keys(D.teams).find(id => D.teams[id].tag === 'C9') || Object.keys(D.teams)[0];
+  let C9 = Object.keys(D.teams).find(id => D.teams[id].tag === 'C9') || Object.keys(D.teams)[0];
   const firstOpp = id => Object.keys(D.teams).find(t => t !== id);
   let S = load() || fresh(C9, D.teams['47363'] ? '47363' : firstOpp(C9));
 
@@ -41,6 +42,7 @@
       return `<option value="${s.id}"${s.id === S.real ? ' selected' : ''}>${s.date}, ${team(S.us).tag} ${w}-${l}</option>`;
     }).join('');
     $('realSel').disabled = !real.length;
+    $('realSel').hidden = !D.series.length;          // the demo data has no series to replay
   }
   $('usSel').onchange = e => { const us = e.target.value; S = fresh(us, S.them === us ? firstOpp(us) : S.them); show(true); };
   $('oppSel').onchange = e => { S = fresh(S.us, e.target.value); show(true); };
@@ -85,6 +87,7 @@
     $('gameLine').textContent = done
       ? `Series over. ${wins('us') > wins('them') ? us.name : op.name} won ${Math.max(wins('us'), wins('them'))}-${Math.min(wins('us'), wins('them'))}.`
       : `Game ${N} of ${S.fmt}, fearless. ${us.tag} on ${m.usSide} side.` + (last ? ` ${last.winner === 'us' ? us.name : op.name} took game ${N - 1}.` : '');
+    $('gameLine').title = $('gameLine').textContent;
     setupControls(); strip();
 
     const st = m.steps, bans = m.plan.bans, picks = m.plan.picks;
@@ -132,8 +135,11 @@
     }).join('');
     drawMap(op);
     const real = S.real && D.series.find(s => s.id === S.real);
-    $('src').innerHTML = esc(`Official GRID data, ${D.season}. ${us.name} ${us.n} games, ${op.name} ${op.n} games.` + (real ? ` Game 1 from the ${real.date} series.` : '')) +
-      ' <span class="keys-hint">Press ? for shortcuts</span>';
+    $('src').innerHTML = esc((D.source === 'demo' ? `Demo data, ${D.season} season totals from the official GRID data.` : `Official GRID data, ${D.season}.`) +
+      ` ${us.name} ${us.n} games, ${op.name} ${op.n} games.` + (real ? ` Game 1 from the ${real.date} series.` : '')) +
+      ' <button type="button" class="link keys-hint" id="helpOpen">Press ? for shortcuts and data</button>';
+    $('connectBtn').textContent = D.source === 'demo' ? 'Connect official data' : 'Refresh data';
+    $('connectBtn').title = D.source === 'demo' ? 'Download the official starter data straight from GitHub into this browser' : 'Check GitHub for newer official data';
   }
 
   // fearless outlook: one dot per proven champion still open after this game's picks, hollow if the plan uses it
@@ -182,12 +188,25 @@
       `<circle cx="12" cy="138" r="9" class="base ${usBlue ? 'us' : 'them'}"/><circle cx="138" cy="12" r="9" class="base ${usBlue ? 'them' : 'us'}"/>`;
     const dots = m.fb_map.map(([x, y, hit], k) =>
       `<circle cx="${X(x)}" cy="${Y(y)}" r="${hit ? 4 : 2.6}" class="dot${hit ? ' hit' : ''}" style="transition-delay:${(k * 0.03).toFixed(2)}s"/>`).join('');
-    $('rift').innerHTML = ground + dots;
+    // the demo data has counts, not positions: a 3x3 grid, each cell shaded by the count of its area
+    const grid = m.fb_grid ? zoneGrid(m.fb_grid) : '';
+    $('rift').innerHTML = ground + dots + grid;
     $('rift').setAttribute('aria-label', `Where ${op.name} gave up first blood this year`);
     $('mapHead').textContent = `Where ${op.name} die first`;
     const v = m.fb_victim;
-    $('mapNote').innerHTML = v.n ? `<b>${esc(v.name)}</b>, their ${v.role}, is the first to die in <b>${v.n} of ${v.of}</b> games.` +
-      `<span class="key"><i class="k hit"></i>${esc(v.name)} <i class="k"></i>others</span>` : 'Not enough games yet.';
+    const key = m.fb_grid ? `<span class="key"><i class="k hit"></i>${m.fb_grid.hit} is where ${esc(v.name)} dies most <i class="k"></i>other areas. Shade = first deaths.</span>`
+      : `<span class="key"><i class="k hit"></i>${esc(v.name)} <i class="k"></i>others</span>`;
+    $('mapNote').innerHTML = v.n ? `<b>${esc(v.name)}</b>, their ${v.role}, is the first to die in <b>${v.n} of ${v.of}</b> games.` + key : 'Not enough games yet.';
+  }
+  // top lane in the top-left corner, bot lane bottom-right, mid on the diagonal, jungle between
+  const GRID = [['top', 'jungle', 'mid'], ['jungle', 'mid', 'jungle'], ['mid', 'jungle', 'bot']];
+  function zoneGrid({ zones, hit }) {
+    const max = Math.max(1, ...Object.values(zones));
+    return '<g class="grid">' + GRID.map((row, r) => row.map((z, c) => {
+      const n = zones[z] || 0, x = c * 50, y = r * 50;
+      return `<rect class="cell${z === hit ? ' hit' : ''}" x="${x + 1}" y="${y + 1}" width="48" height="48" rx="3" style="fill-opacity:${(0.08 + 0.6 * n / max).toFixed(2)}"><title>${z}: ${n}</title></rect>` +
+        `<text class="cnt" x="${x + 25}" y="${y + 31}">${n}</text>`;
+    }).join('')).join('') + '</g>';
   }
 
   // ---------- copy the plan as plain text for the team chat ----------
@@ -209,8 +228,12 @@
 
   // ---------- lock in what was played ----------
   const norm = s => s.trim().toLowerCase().replace(/[^a-z]/g, '');
-  const byNorm = Object.fromEntries(D.champions.map(c => [norm(c), c]));
-  $('champList').innerHTML = D.champions.map(c => `<option value="${esc(c)}">`).join('');
+  let byNorm;
+  function indexChampions() {
+    byNorm = Object.fromEntries(D.champions.map(c => [norm(c), c]));
+    $('champList').innerHTML = D.champions.map(c => `<option value="${esc(c)}">`).join('');
+  }
+  indexChampions();
   const roleIdx = { top: 0, jungle: 1, mid: 2, adc: 3, support: 4 };
   function openLock() {
     const us = team(S.us), op = team(S.them), N = gameNo();
@@ -337,7 +360,7 @@
     if (e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
     const el = e.target, tag = el && el.tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || (el && el.isContentEditable) || (el && el.closest && el.closest('#lockDlg'))) return;
-    if ($('lockDlg').open) return;
+    if ($('lockDlg').open || $('dataDlg').open) return;
     if (e.key === '?') { e.preventDefault(); helpDlg.open ? helpDlg.close() : helpDlg.showModal(); return; }
     if (helpDlg.open) return;
     if (e.key === ' ') {
@@ -353,6 +376,102 @@
     else if (k === 'p') { e.preventDefault(); printSheet(); }
   });
 
+  // ---------- swap in other data: official download, cached copy, or a data.js file ----------
+  // keeps the series state when both teams still exist
+  function useData(next) {
+    D = next;
+    C9 = Object.keys(D.teams).find(id => D.teams[id].tag === 'C9') || Object.keys(D.teams)[0];
+    indexChampions();
+    if (!(D.teams[S.us] && D.teams[S.them])) S = fresh(C9, D.teams['47363'] ? '47363' : firstOpp(C9));
+    else if (S.real && !D.series.some(s => s.id === S.real)) S.real = null;
+    show(true);
+  }
+
+  const dataDlg = $('dataDlg');
+  let job = null;                                     // AbortController of a download in progress
+  function dataMessage(title, text, meter) {
+    $('dataTitle').textContent = title;
+    $('dataStatus').textContent = text;
+    $('meter').style.display = meter === null ? 'none' : '';
+    $('dataPrivacy').style.display = meter === null ? 'none' : '';
+    if (meter !== null) { $('meterBar').style.transform = `scaleX(${meter})`; $('meter').setAttribute('aria-valuenow', Math.round(meter * 100)); }
+    $('dataCancel').textContent = job ? 'Cancel' : 'Close';
+    if (!dataDlg.open) { pause(); dataDlg.showModal(); }
+  }
+  dataDlg.addEventListener('close', () => { if (job) job.abort(); });
+  $('dataCancel').onclick = () => dataDlg.close();
+
+  async function connect() {
+    if (job) return;
+    const ctl = job = new AbortController();
+    dataMessage('Connect official data', 'Checking for the latest data', 0);
+    try {
+      let sha = null;
+      try { sha = await Loader.latestSha(ctl.signal); } catch (e) { if (ctl.signal.aborted) throw e; }
+      const cached = await Loader.cache.get();
+      let next;
+      if (cached && cached.payload && (sha ? cached.sha === sha : true)) next = cached.payload;       // no news from GitHub: use what we have
+      else {
+        next = await Loader.load(Loader.remote(ctl.signal), { signal: ctl.signal, onProgress: p => {
+          if (p.phase === 'series') dataMessage('Connect official data', `Downloading ${p.done} of ${p.total} series`, p.total ? p.done / p.total : 0);
+          else dataMessage('Connect official data', 'Reading the list of series', 0);
+        } });
+        dataMessage('Connect official data', 'Building the plan data', 1);
+        next.source = 'official';
+        if (sha) await Loader.cache.put(sha, 'LCS', '2026-01-01', next).catch(() => {});
+      }
+      job = null;
+      dataDlg.close();
+      useData(next);
+    } catch (e) {
+      const cancelled = ctl.signal.aborted;
+      job = null;
+      if (cancelled) { if (dataDlg.open) dataDlg.close(); return; }
+      dataMessage('Could not connect', `${e.message || e}. The page keeps the data it has. Try again, or load a data.js file from the help card.`, null);
+    }
+  }
+  $('connectBtn').onclick = connect;
+
+  // a data.js built by pipeline/build.py: window.DRAFTROOM = {...}; (the file is plain JSON after the assignment)
+  const NEED = ['id', 'name', 'tag', 'n', 'pool', 'players', 'bans', 'first_pick', 'e', 'recent', 'fb_got', 'fb_gave'];
+  function parseDataJs(text) {
+    const m = /window\.DRAFTROOM\s*=\s*/.exec(text);
+    if (!m) throw new Error('This file has no window.DRAFTROOM. Use the data.js that pipeline/build.py writes');
+    let d;
+    try { d = JSON.parse(text.slice(m.index + m[0].length).trim().replace(/;\s*$/, '')); } catch { throw new Error('This file is not a data.js built by pipeline/build.py'); }
+    const ids = d && d.teams && typeof d.teams === 'object' ? Object.keys(d.teams) : [];
+    if (!ids.length) throw new Error('window.DRAFTROOM has no teams');
+    if (!Array.isArray(d.champions)) throw new Error('window.DRAFTROOM has no champion list');
+    for (const id of ids) for (const k of NEED) if (!(k in d.teams[id])) throw new Error(`Team ${id} has no "${k}"`);
+    if (!Array.isArray(d.series)) d.series = [];
+    return d;
+  }
+  async function loadFile(file) {
+    try {
+      const next = parseDataJs(await file.text());
+      if (dataDlg.open) dataDlg.close();
+      if (helpDlg.open) helpDlg.close();
+      useData(next);
+    } catch (e) {
+      if (helpDlg.open) helpDlg.close();
+      dataMessage('Could not use that file', `${e.message || e}.`, null);
+    }
+  }
+  $('loadFile').onclick = () => $('fileIn').click();
+  $('fileIn').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) loadFile(f); };
+  document.addEventListener('dragover', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); document.body.classList.add('drop'); } });
+  document.addEventListener('dragleave', e => { if (!e.relatedTarget) document.body.classList.remove('drop'); });
+  document.addEventListener('drop', e => {
+    document.body.classList.remove('drop');
+    if (!(e.dataTransfer && e.dataTransfer.files.length)) return;
+    e.preventDefault();
+    loadFile(e.dataTransfer.files[0]);
+  });
+  $('clearCache').onclick = () => Loader.cache.clear().then(
+    () => { $('helpMsg').textContent = 'Cached data removed. This page keeps what it has until you reload.'; },
+    () => { $('helpMsg').textContent = 'Could not clear the cache.'; });
+  $('src').addEventListener('click', e => { if (e.target.closest('#helpOpen')) { pause(); helpDlg.showModal(); } });
+
   function show(autoplay) {
     pause(); save(); fill(); build();
     t = 0; done = false;
@@ -366,4 +485,7 @@
   const vs = q.get('vs') && Object.values(D.teams).find(x => x.tag === q.get('vs'));
   if (vs && vs.id !== S.them) S = fresh(S.us, vs.id);
   if (q.has('t')) { show(false); t = parseFloat(q.get('t')); render(); } else show(true);
+
+  // a copy of the official data saved in this browser makes a reload instant (no network needed)
+  if (D.source === 'demo' && !q.has('t')) Loader.cache.get().then(c => { if (c && c.payload && D.source === 'demo') useData(c.payload); });
 })();
