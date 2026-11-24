@@ -75,6 +75,7 @@ Results and what they do and do not mean: [docs/backtest.md](docs/backtest.md).
 | `web/planner.js` | The plan rules above. Plain JavaScript, no dependencies, also runs in Node. |
 | `web/app.js` | Series state, the lock-in dialog and the champion-select replay. The series is kept in the browser's local storage. |
 | `tests/planner.test.js` | Planner checks. |
+| `docs/ai-workflow.md` | How Junie CLI built the later features, task by task. |
 | `tests/backtest.js` | Scores the planner against real games and writes `docs/backtest.md`. |
 
 Roles are inferred from where each player stood between 1:30 and 5:30 and their starting item, then voted over all of that player's games.
