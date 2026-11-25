@@ -2,7 +2,10 @@
 
 A fearless draft planner for League of Legends coaches. It reads official GRID match data and tells the coaching staff, before each game of a series, what to ban, what to pick first and what to play for in the early game, with the numbers behind each call.
 
-Built for the Cloud9 x JetBrains "Sky's The Limit" hackathon, Category 2 (League of Legends macro scouting and draft management).
+Built for the Cloud9 x JetBrains "Sky's The Limit" hackathon, Category 2 (League of Legends macro scouting and draft management). Most features after the first version were built by Junie CLI: see [docs/ai-workflow.md](docs/ai-workflow.md).
+
+- Video (1:30): https://youtu.be/wnnuAn70VVA
+- Devpost: https://devpost.com/software/draft-room-b74qfs
 
 ## Live demo
 
@@ -62,7 +65,7 @@ open web/index.html        # or: python -m http.server 8000 --bind 127.0.0.1 --d
 
 `pipeline/build.py --public` writes `web/demo-data.js` (season totals only, safe to commit).
 
-`pipeline/build.py --anon` builds a demo copy where every team but Cloud9 gets a made-up name (Team Acme, Team Birch, ...). The demo video uses it.
+`pipeline/build.py --anon` builds a copy where every team but Cloud9 gets a made-up name (Team Acme, Team Birch, ...), for screenshots that should not name other teams.
 
 Check the planner on every team pair through a full Bo5:
 
@@ -76,7 +79,18 @@ python tests/fit.py                        # one-screen check; DATA=demo for the
 
 ## Backtest
 
-Had a coach used the planner before each real LCS 2026 game, how often would its prediction of the opponent's picks have been right? The planner is scored on past games using only what was known before each series, and compared with a naive "most played" baseline. Rerun it:
+Had a coach used the planner before each real LCS 2026 game, how much of the plan would have held up? Every game is re-planned with only what was known before its series, and compared with a plain "most played" baseline. Choices were tuned on games before July; later games were scored once.
+
+On the 35 held-out games (70 runs):
+
+| Measure | Planner | Most played |
+|---|---|---|
+| Our first pick was not banned | 97.1% | 90.0% |
+| Our bans hit a champion they really used | 25.2% | 19.0% |
+| A "role is thin" warning came true | 31.4% | 14.9% |
+| At least 1 of 3 guessed opponent picks was right | 20.0% | 25.7% |
+
+The last row goes against us, and is kept. Rerun it:
 
 ```bash
 python pipeline/backtest.py --data ../stl-hackathon-2026-grid-starter
@@ -97,9 +111,13 @@ Results and what they do and do not mean: [docs/backtest.md](docs/backtest.md).
 | `web/vendor/fzstd.js` | MIT zstd decoder (the only third-party code). |
 | `web/demo-data.js` | Season totals only, committed. `web/data.js` is never committed. |
 | `web/app.js` | Series state, the lock-in dialog and the champion-select replay. The series is kept in the browser's local storage. |
-| `tests/planner.test.js` | Planner checks. |
-| `docs/ai-workflow.md` | How Junie CLI built the later features, task by task. |
+| `web/index.html`, `web/style.css` | The page and its look. |
+| `tests/planner.test.js` | Planner checks on every team pair through a full Bo5. |
+| `tests/fit.py` | One-screen check in a real browser (Playwright). |
+| `tests/loader.check.js` | Checks that `web/loader.js` gives the same data as the Python pipeline. |
 | `tests/backtest.js` | Scores the planner against real games and writes `docs/backtest.md`. |
+| `docs/ai-workflow.md` | How Junie CLI built the later features, task by task. |
+| `.junie/` | The rules Junie follows and every Junie session transcript. |
 
 Roles are inferred from where each player stood between 1:30 and 5:30 and their starting item, then voted over all of that player's games.
 

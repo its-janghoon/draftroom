@@ -1,6 +1,6 @@
 # Backtest
 
-If a coach had used the planner before each real LCS 2026 game, how often would its prediction of the opponent's picks have been right?
+If a coach had used the planner before each real LCS 2026 game, how much of the plan would have held up, and how often would its guess of the opponent's picks have been right?
 
 - **Date range:** 2026-02-22 to 2026-10-12
 - **Games:** 141 (of 225 LCS games since 2026-01-01; left out: 71 for a team with under 10 prior games, 11 for incomplete draft, 2 for side unknown)

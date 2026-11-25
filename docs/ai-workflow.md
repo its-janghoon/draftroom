@@ -6,7 +6,7 @@ Every task, Junie's full session and the diff it produced are in this repo:
 
 - `.junie/guidelines.md`: the project rules Junie reads before every task
 - `.junie/sessions/*.md`: the session transcripts, one per task
-- Pull requests #1 to #4: the reviewed changes
+- Pull requests #1 to #4, #7 and #9: the reviewed changes Junie made
 
 ## The setup
 
@@ -44,6 +44,16 @@ The first result: the planner's guess of the opponent's picks lost to a plain "t
 The same backtest also scored the parts of the plan a coach acts on. On the held-out games, the plan's first pick was banned away in 2 of 70 runs. Its bans hit a champion the opponent really used in 25% of cases, against 19% for a most-played list. The full tables, with intervals and the caveats, are in [backtest.md](backtest.md).
 
 Lesson: an agent will tell you an uncomfortable result if the task asks for honesty and fixes the rules in advance.
+
+### 5. Dark theme
+
+Coaches watch champion select on a dark screen, so the app moved to a dark theme (PR #7). Junie swapped the colour tokens in `web/style.css`, ran the planner tests and the one-screen check again, and then wrote a small script that measures the contrast of every text and background pair. The lowest was 4.3 to 1.
+
+### 6. A public site with no hosted data
+
+The licensed data cannot be hosted, but judges need a live demo. The task described three layers (PR #9): season totals only in `web/demo-data.js`, a "Connect official data" button that downloads the official starter repo into the browser, and an upload for a locally built `data.js`. Junie ported `extract.py` and `build.py` to `web/loader.js` and wrote `tests/loader.check.js`, which checks that the browser loader gives the same teams, games and records as the Python pipeline.
+
+Lesson: a port is only safe with a check that compares it to the original.
 
 ## What worked
 
