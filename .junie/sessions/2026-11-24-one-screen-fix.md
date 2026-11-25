@@ -1,6 +1,6 @@
 # Session transcript
 
-### Ran cd /home/ubuntu/workplace/draftroom; cat .junie/guidelines.md; ls -a . web tests; wc -l web/*; git status --short; cat tests/fit.py
+### Ran cd ~/workplace/draftroom; cat .junie/guidelines.md; ls -a . web tests; wc -l web/*; git status --short; cat tests/fit.py
 
 ```text
 # Draft Room guidelines for Junie
@@ -99,7 +99,7 @@ sys.exit(1 if bad else 0)
 The bash command read the project guidelines and listed the repository, showing a clean git status and the contents of the fit test script, though part of the output was truncated.
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; cat web/index.html web/style.css; python tests/fit.py 2>&1 | tail -25
+### Ran cd ~/workplace/draftroom; cat web/index.html web/style.css; python tests/fit.py 2>&1 | tail -25
 
 ```text
 <!doctype html>
@@ -503,7 +503,7 @@ The fit check script finished with exit code 0, reporting no JavaScript errors b
 
 I am checking how app.js uses the recap and used rendering so I can confirm where those displays are wired in.
 
-### Ran cd /home/ubuntu/workplace/draftroom; grep -n "recap\|usedHead\|'used'\|\"used\"\|later\|thin\|outlook" web/app.js | head -50; ls /tmp/junie*/ ; git diff --stat
+### Ran cd ~/workplace/draftroom; grep -n "recap\|usedHead\|'used'\|\"used\"\|later\|thin\|outlook" web/app.js | head -50; ls /tmp/junie*/ ; git diff --stat
 
 ```text
 108:    $('thin').textContent = m.thin;
@@ -598,7 +598,7 @@ I found that the recap and locked chips can move from the left panel into a two-
    <section class="sheet">
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; cat >> web/style.css <<'EOF'  /* game recap and locked champions: compact strip under the draft */ .strip2 { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 0 18px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--rule); } .strip2 h3 { font-size: 14px; margin-bottom: 3px; } .strip2 .used-h { margin: 0 0 3px; font: 600 14px/1.2 Barlow, sans-serif; color: var(--ink); } .strip2 .g1 { font-size: 12.5px; line-height: 1.3; } .strip2 .g1 li { padding: 1px 0; } .strip2 .used { margin-bottom: 3px; } EOF python tests/fit.py 2>&1 | tail -20
+### Ran cd ~/workplace/draftroom; cat >> web/style.css <<'EOF'  /* game recap and locked champions: compact strip under the draft */ .strip2 { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 0 18px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--rule); } .strip2 h3 { font-size: 14px; margin-bottom: 3px; } .strip2 .used-h { margin: 0 0 3px; font: 600 14px/1.2 Barlow, sans-serif; color: var(--ink); } .strip2 .g1 { font-size: 12.5px; line-height: 1.3; } .strip2 .g1 li { padding: 1px 0; } .strip2 .used { margin-bottom: 3px; } EOF python tests/fit.py 2>&1 | tail -20
 
 ```text
 SCROLLS 1366x680 vs SR game 1: 1366x694
@@ -627,7 +627,7 @@ SCROLLS 1440x800 vs DIG game 2: 1440x892
 The style rules for a game recap strip were appended to the stylesheet, and the fit test ran with exit code 0, reporting no errors across the 1366x680, 1440x800, and 1920x960 viewports for 24 scroll cases.
 ```
 
-### Failed to run cd /home/ubuntu/workplace/draftroom; cat > $JUNIE_TMPDIR/m.py <<'EOF' import pathlib from playwright.sync_api import sync_playwright U = pathlib.Path('web/index.html').resolve().as_uri() with sync_playwright() as p:     b = p.chromium.launch()     for w,h in [(1366,680),(1440,800),(1920,960)]:         pg = b.new_page(viewport={'width':w,'height':h})         for vs in ['TL','DIG']:           pg.goto(f'{U}?vs={vs}&t=40'); pg.evaluate('localStorage.clear()'); pg.goto(f'{U}?vs={vs}&t=40'); pg.wait_for_timeout(300)           for g in (0,1):             if g:                 pg.select_option('#realSel', index=1); pg.wait_for_timeout(200)                 pg.evaluate('document.getElementById("play").click(); document.getElementById("play").click()')             print(w,h,vs,g+1,pg.evaluate('''()=>({doc:document.documentElement.scrollHeight, top:document.querySelector('.top').offsetHeight, plan:document.querySelector('.plan').offsetHeight, board:document.querySelector('.board').offsetHeight, panels:[...document.querySelectorAll('.board>.sheet')].map(e=>[e.offsetHeight,e.scrollHeight]), strip:document.querySelector('.strip2').offsetHeight})''')) EOF python $JUNIE_TMPDIR/m.py
+### Failed to run cd ~/workplace/draftroom; cat > $JUNIE_TMPDIR/m.py <<'EOF' import pathlib from playwright.sync_api import sync_playwright U = pathlib.Path('web/index.html').resolve().as_uri() with sync_playwright() as p:     b = p.chromium.launch()     for w,h in [(1366,680),(1440,800),(1920,960)]:         pg = b.new_page(viewport={'width':w,'height':h})         for vs in ['TL','DIG']:           pg.goto(f'{U}?vs={vs}&t=40'); pg.evaluate('localStorage.clear()'); pg.goto(f'{U}?vs={vs}&t=40'); pg.wait_for_timeout(300)           for g in (0,1):             if g:                 pg.select_option('#realSel', index=1); pg.wait_for_timeout(200)                 pg.evaluate('document.getElementById("play").click(); document.getElementById("play").click()')             print(w,h,vs,g+1,pg.evaluate('''()=>({doc:document.documentElement.scrollHeight, top:document.querySelector('.top').offsetHeight, plan:document.querySelector('.plan').offsetHeight, board:document.querySelector('.board').offsetHeight, panels:[...document.querySelectorAll('.board>.sheet')].map(e=>[e.offsetHeight,e.scrollHeight]), strip:document.querySelector('.strip2').offsetHeight})''')) EOF python $JUNIE_TMPDIR/m.py
 
 ```text
 Traceback (most recent call last):
@@ -661,7 +661,7 @@ Traceback (most recent call last):
   File "<venv>/site-packages/playwright/_impl/channel_owner.py", line 398, in _mapped
     return mapper(await awaitable)
                   ^^^^^^^^^^^^^^^
-playwright._impl._errors.Error: BrowserType.launch: Executable doesn't exist at /home/ubuntu/.cache/ms-playwright/chromium_headless_shell-1255/chrome-headless-shell-linux64/chrome-headless-shell
+playwright._impl._errors.Error: BrowserType.launch: Executable doesn't exist at ~/.cache/ms-playwright/chromium_headless_shell-1255/chrome-headless-shell-linux64/chrome-headless-shell
 ╔════════════════════════════════════════════════════════════╗
 ║ Looks like Playwright was just installed or updated.       ║
 ║ Please run the following command to download new browsers: ║
@@ -672,10 +672,10 @@ playwright._impl._errors.Error: BrowserType.launch: Executable doesn't exist at 
 ╚════════════════════════════════════════════════════════════╝
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; echo "CHROME=$CHROME"; sed -i "s|p.chromium.launch()|p.chromium.launch(executable_path=__import__('os').environ.get('CHROME'), args=['--no-sandbox'])|" $JUNIE_TMPDIR/m.py; python $JUNIE_TMPDIR/m.py
+### Ran cd ~/workplace/draftroom; echo "CHROME=$CHROME"; sed -i "s|p.chromium.launch()|p.chromium.launch(executable_path=__import__('os').environ.get('CHROME'), args=['--no-sandbox'])|" $JUNIE_TMPDIR/m.py; python $JUNIE_TMPDIR/m.py
 
 ```text
-CHROME=/home/ubuntu/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+CHROME=~/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
 1366 680 TL 1 {'doc': 694, 'top': 50, 'plan': 139, 'board': 457, 'panels': [[457, 455], [457, 455], [457, 455]], 'strip': 65}
 1366 680 TL 2 {'doc': 750, 'top': 50, 'plan': 139, 'board': 513, 'panels': [[513, 511], [513, 511], [513, 511]], 'strip': 102}
 1366 680 DIG 1 {'doc': 694, 'top': 50, 'plan': 139, 'board': 457, 'panels': [[457, 455], [457, 455], [457, 455]], 'strip': 65}
@@ -698,7 +698,7 @@ The script ran successfully (exit code 0) and printed layout measurements for fo
 
 I found that the middle panel is the tallest, so the page still scrolls at 1440x800 and overflows by 14px at 1366x680, with 55–112px overflow in game 2. Next I'll measure each panel's natural height with the grid alignment set to start, so I can decide how to split the content across the three panels.
 
-### Ran cd /home/ubuntu/workplace/draftroom; sed -i "s|print(w,h,vs|pg.add_style_tag(content='.board{align-items:start}'); print(w,h,vs|; s|'panels':|'x':0,'panels':|" $JUNIE_TMPDIR/m.py; python $JUNIE_TMPDIR/m.py | grep -v " DIG "
+### Ran cd ~/workplace/draftroom; sed -i "s|print(w,h,vs|pg.add_style_tag(content='.board{align-items:start}'); print(w,h,vs|; s|'panels':|'x':0,'panels':|" $JUNIE_TMPDIR/m.py; python $JUNIE_TMPDIR/m.py | grep -v " DIG "
 
 ```text
 1366 680 TL 1 {'doc': 694, 'top': 50, 'plan': 139, 'board': 457, 'panels': [[289, 287], [457, 455], [393, 391]], 'strip': 65}
@@ -751,7 +751,7 @@ The script ran successfully and printed layout measurements for six viewport and
    <section class="sheet">
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; python - <<'EOF' p='web/style.css' s=open(p).read() i=s.index('\n/* game recap and locked champions') open(p,'w').write(s[:i]) EOF tail -5 web/style.css; git diff web/index.html | head -30; git diff web/app.js web/style.css
+### Ran cd ~/workplace/draftroom; python - <<'EOF' p='web/style.css' s=open(p).read() i=s.index('\n/* game recap and locked champions') open(p,'w').write(s[:i]) EOF tail -5 web/style.css; git diff web/index.html | head -30; git diff web/app.js web/style.css
 
 ```text
 .dlg .row .primary { background: var(--c9); border-color: var(--c9); color: #fff; font-weight: 600; }
@@ -864,7 +864,7 @@ index 1036bbf..ffc67ce 100644
 The command truncated the end of web/style.css to remove a trailing block of styles, then displayed the tail of that file and the git diffs for the HTML, JavaScript, and CSS files, which completed with exit code 0.
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; sed -i 's/@media (max-height: 740px)/@media (max-height: 820px)/' web/style.css; python tests/fit.py 2>&1 | tail -20
+### Ran cd ~/workplace/draftroom; sed -i 's/@media (max-height: 740px)/@media (max-height: 820px)/' web/style.css; python tests/fit.py 2>&1 | tail -20
 
 ```text
 SCROLLS 1366x680 vs TL game 2: 1366x700
@@ -889,7 +889,7 @@ The style.css media query threshold was changed from 740px to 820px and the fit 
 
 I reverted the move so the used chips stay in the left panel, and widening the compact layout to 820px fixed the 1440x800 and game 1 cases, but 8 cases still scroll. Next I'm shortening each recap fact to one line in app.js.
 
-### Ran cd /home/ubuntu/workplace/draftroom; python - <<'EOF' p='web/app.js' s=open(p).read() a=s.index("        if (r.first_scuttle)") b=s.index("      } else f.push(`Entered by hand") new='''        if (r.first_scuttle) f.push(`Scuttle: <b>${esc(r.first_scuttle.who)}</b> (${name(r.first_scuttle.team)}), ${r.first_scuttle.side}, ${P.mmss(r.first_scuttle.sec)}`);         if (r.first_blood) f.push(`First blood: <b>${esc(r.first_blood.killer)}</b> (${name(r.first_blood.team)}), ${r.first_blood.zone}, ${P.mmss(r.first_blood.sec)}`);         if (r.first_dragon) f.push(`First dragon: ${r.first_dragon.team === S.us ? us.tag : op.tag}, ${P.mmss(r.first_dragon.sec)}`);         if (r.gold) f.push(`Final gold: ${op.tag} ${(r.gold[S.them] / 1000).toFixed(1)}k, ${us.tag} ${(r.gold[S.us] / 1000).toFixed(1)}k`); ''' s=s[:a]+new+s[b:] open(p,'w').write(s) EOF grep -n "recap\b\|g1" web/style.css | head; python tests/fit.py 2>&1 | tail -12
+### Ran cd ~/workplace/draftroom; python - <<'EOF' p='web/app.js' s=open(p).read() a=s.index("        if (r.first_scuttle)") b=s.index("      } else f.push(`Entered by hand") new='''        if (r.first_scuttle) f.push(`Scuttle: <b>${esc(r.first_scuttle.who)}</b> (${name(r.first_scuttle.team)}), ${r.first_scuttle.side}, ${P.mmss(r.first_scuttle.sec)}`);         if (r.first_blood) f.push(`First blood: <b>${esc(r.first_blood.killer)}</b> (${name(r.first_blood.team)}), ${r.first_blood.zone}, ${P.mmss(r.first_blood.sec)}`);         if (r.first_dragon) f.push(`First dragon: ${r.first_dragon.team === S.us ? us.tag : op.tag}, ${P.mmss(r.first_dragon.sec)}`);         if (r.gold) f.push(`Final gold: ${op.tag} ${(r.gold[S.them] / 1000).toFixed(1)}k, ${us.tag} ${(r.gold[S.us] / 1000).toFixed(1)}k`); ''' s=s[:a]+new+s[b:] open(p,'w').write(s) EOF grep -n "recap\b\|g1" web/style.css | head; python tests/fit.py 2>&1 | tail -12
 
 ```text
 70:  .g1 { list-style: none; font-size: 13.5px; }
@@ -912,7 +912,7 @@ SCROLLS 1920x960 vs SR game 2: 1920x966
 The web app recap section was rewritten, and the test script finished with 7 scroll cases and no errors.
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; python - <<'EOF' import re,os p=os.environ['JUNIE_TMPDIR']+'/m.py' s=open(p).read() s=s.replace("strip:document.querySelector('.strip2').offsetHeight","kids:[...document.querySelector('.board>.sheet').children].map(e=>e.id+':'+e.offsetHeight)") s=s.replace("[(1366,680),(1440,800),(1920,960)]","[(1366,680),(1920,960)]") open(p,'w').write(s) EOF python $JUNIE_TMPDIR/m.py | grep -v " DIG "
+### Ran cd ~/workplace/draftroom; python - <<'EOF' import re,os p=os.environ['JUNIE_TMPDIR']+'/m.py' s=open(p).read() s=s.replace("strip:document.querySelector('.strip2').offsetHeight","kids:[...document.querySelector('.board>.sheet').children].map(e=>e.id+':'+e.offsetHeight)") s=s.replace("[(1366,680),(1440,800),(1920,960)]","[(1366,680),(1920,960)]") open(p,'w').write(s) EOF python $JUNIE_TMPDIR/m.py | grep -v " DIG "
 
 ```text
 1366 680 TL 1 {'doc': 680, 'top': 50, 'plan': 139, 'board': 393, 'panels': [[357, 355], [384, 382], [393, 391]], 'kids': [':19', 'pool:109', 'thin:18', 'outlookHead:17', 'outlook:86', 'recapHead:19', 'recap:40', 'usedHead:0', 'used:0']}
@@ -925,7 +925,7 @@ The web app recap section was rewritten, and the test script finished with 7 scr
 The script ran successfully and showed the board height rising from 393 to 462 pixels at 1366x680 and from 482 to 637 pixels at 1920x960 in the second state.
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; sed -i 's/@media (max-height: 820px)/@media (max-height: 980px)/' web/style.css python - <<'EOF' p='web/style.css' s=open(p).read() old="    .ctrl { margin-top: 4px; } .ctrl button { padding: 2px 8px; }\n  }" new="""    .ctrl { margin-top: 4px; } .ctrl button { padding: 2px 8px; }     .g1 { line-height: 1.25; }     .g1 li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }     .sheet h3#recapHead { margin-top: 3px !important; margin-bottom: 2px; }     .used-h { margin: 3px 0 2px; }   }""" assert old in s open(p,'w').write(s.replace(old,new)) EOF python tests/fit.py 2>&1 | tail -12; python $JUNIE_TMPDIR/m.py | grep -v " DIG "
+### Ran cd ~/workplace/draftroom; sed -i 's/@media (max-height: 820px)/@media (max-height: 980px)/' web/style.css python - <<'EOF' p='web/style.css' s=open(p).read() old="    .ctrl { margin-top: 4px; } .ctrl button { padding: 2px 8px; }\n  }" new="""    .ctrl { margin-top: 4px; } .ctrl button { padding: 2px 8px; }     .g1 { line-height: 1.25; }     .g1 li { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }     .sheet h3#recapHead { margin-top: 3px !important; margin-bottom: 2px; }     .used-h { margin: 3px 0 2px; }   }""" assert old in s open(p,'w').write(s.replace(old,new)) EOF python tests/fit.py 2>&1 | tail -12; python $JUNIE_TMPDIR/m.py | grep -v " DIG "
 
 ```text
 SCROLLS 1366x680 vs TL game 2: 1366x683
@@ -952,7 +952,7 @@ The CSS layout was adjusted for smaller screens and the fit test ran, with all t
 
 I found that compacting the layout brought every case except 1366x680 game 2 within bounds, leaving that one only 3px over. I'm now trimming the recap row padding and line-height slightly, then rerunning both test suites.
 
-### Ran cd /home/ubuntu/workplace/draftroom; sed -i 's/    .g1 { line-height: 1.25; }/    .g1 { line-height: 1.2; }\n    .g1 li { padding: 0; }/' web/style.css; python tests/fit.py 2>&1 | tail -6; node tests/planner.test.js 2>&1 | tail -4; git status --short
+### Ran cd ~/workplace/draftroom; sed -i 's/    .g1 { line-height: 1.25; }/    .g1 { line-height: 1.2; }\n    .g1 li { padding: 0; }/' web/style.css; python tests/fit.py 2>&1 | tail -6; node tests/planner.test.js 2>&1 | tail -4; git status --short
 
 ```text
 1366 680 errors []

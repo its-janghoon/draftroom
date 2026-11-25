@@ -1,6 +1,6 @@
 # Session transcript
 
-### Ran cd /home/ubuntu/workplace/draftroom; cat .junie/guidelines.md; ls -a . web tests; wc -l web/* tests/*; git status --short
+### Ran cd ~/workplace/draftroom; cat .junie/guidelines.md; ls -a . web tests; wc -l web/* tests/*; git status --short
 
 ```text
 # Draft Room guidelines for Junie
@@ -65,7 +65,7 @@ The bash command read the project guidelines file, listed the directory contents
 
 I'm checking that the tests run and that the data file is git-ignored, and I'm sketching an outlook view that shows open and planned champions per role, with the low-games warning and layout details still being worked out.
 
-### Ran cd /home/ubuntu/workplace/draftroom; cat .gitignore; git status --short; node tests/planner.test.js; which chromium chromium-browser google-chrome; python3 -c "import playwright;print(1)"; ls ~/.cache/ms-playwright 2>/dev/null; node -e " const w={};new Function('window',require('fs').readFileSync('web/data.js','utf8'))(w);const D=w.DRAFTROOM; for(const t of Object.values(D.teams)){const r=['top','jungle','mid','adc','support'].map(x=>Object.values(t.pool[x]||{}).filter(r=>r[0]>=5).length);console.log(t.tag,r.join())}"
+### Ran cd ~/workplace/draftroom; cat .gitignore; git status --short; node tests/planner.test.js; which chromium chromium-browser google-chrome; python3 -c "import playwright;print(1)"; ls ~/.cache/ms-playwright 2>/dev/null; node -e " const w={};new Function('window',require('fs').readFileSync('web/data.js','utf8'))(w);const D=w.DRAFTROOM; for(const t of Object.values(D.teams)){const r=['top','jungle','mid','adc','support'].map(x=>Object.values(t.pool[x]||{}).filter(r=>r[0]>=5).length);console.log(t.tag,r.join())}"
 
 ```text
 # Sky's The Limit 2026 hackathon data: licensed, must not be committed
@@ -108,7 +108,7 @@ SEN 2,3,3,4,4
 The bash command ran successfully, showing git-ignore rules, the repository status, a planner test run, a check for available browsers and Playwright, and per-team counts of pool entries with values of at least 5 for each role.
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; python3 - <<'E' p='web/planner.js' s=open(p).read() s=s.replace("""  const api = { plan, mmss, own, ROLES };""","""  // how deep each role stays for the rest of the series: proven champions (5+ games) not locked yet.   // open = still free after this game's planned picks; planned = proven champions this game's plan uses.   function outlook(D, usId, locked, plannedPicks) {     const us = D.teams[usId], gone = new Set(locked);     const used = new Set((plannedPicks || []).map(p => (typeof p === 'string' ? p : p.champ)));     return ROLES.map(role => {       const proven = Object.entries(us.pool[role] || {}).filter(([c, rec]) => rec[0] >= 5 && !gone.has(c)).map(([c]) => c);       return { role, open: proven.filter(c => !used.has(c)), planned: proven.filter(c => used.has(c)) };     });   }    const api = { plan, outlook, mmss, own, ROLES, ROLE_NAME };""") open(p,'w').write(s)  p='tests/planner.test.js' s=open(p).read() s=s.replace("const { plan } =","const { plan, outlook } =") s=s.replace("""    // play the game as planned""","""    const ol = outlook(D, us, locked, p.steps.us_pick);     assert.strictEqual(ol.length, 5, `${us} vs ${them} game ${game}: outlook needs one row per role`);     for (const r of ol) {       for (const c of [...r.open, ...r.planned]) assert(!locked.includes(c), `${us} game ${game}: outlook lists locked ${c}`);       for (const c of r.open) assert(!r.planned.includes(c), `${us} game ${game}: ${c} is both open and planned`);     }     // play the game as planned""") open(p,'w').write(s)  p='web/index.html' s=open(p).read() s=s.replace("""    <p class="thin" id="thin"></p> ""","""    <p class="thin" id="thin"></p>     <h3 class="outlook-h" id="outlookHead">Fearless outlook</h3>     <div class="outlook num" id="outlook"></div> """) open(p,'w').write(s)  p='web/app.js' s=open(p).read() s=s.replace("""    $('thin').textContent = m.thin; ""","""    $('thin').textContent = m.thin;     outlook(N, done); """) s=s.replace("""  function recap(us""","""  // fearless outlook: one dot per proven champion still open after this game's picks, hollow if the plan uses it   function outlook(N, done) {     $('outlookHead').style.display = $('outlook').style.display = done ? 'none' : '';     if (done) { $('outlook').innerHTML = ''; return; }     const from = N + 1, games = from === S.fmt ? `game ${from}` : `games ${from}-${S.fmt}`;     $('outlook').innerHTML = P.outlook(D, S.us, locked(), m.steps.us_pick).map(r => {       const dots = r.open.map(c => `<i class="dot" title="${esc(c)}"></i>`).join('') +         r.planned.map(c => `<i class="dot plan" title="${esc(c)}, in this game's plan"></i>`).join('');       const warn = r.open.length <= 2 && from <= S.fmt ? `<span class="warn">${r.open.length} left for ${games}</span>` : '';       return `<div class="orow"><span class="role">${P.ROLE_NAME[r.role]}</span><span class="dots" role="img" aria-label="${r.open.length} proven open, ${r.planned.length} planned">${dots}</span>` +         `<b>${r.open.length}</b>${warn}</div>`;     }).join('');   }    function recap(us""",1) open(p,'w').write(s)  p='web/style.css' s=open(p).read() s=s.replace("""  .thin { margin-top: 8px; font-size: 13.5px; color: var(--ban); } ""","""  .thin { margin-top: 8px; font-size: 13.5px; color: var(--ban); }   .outlook-h { margin-top: 10px; margin-bottom: 4px; }   .orow { display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 2px 0; border-top: 1px solid var(--rule); }   .orow .role { width: 58px; flex: none; color: var(--pencil); }   .orow .dots { display: flex; gap: 3px; flex: none; min-width: 86px; }   .orow .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c9); border: 1.5px solid var(--c9); }   .orow .dot.plan { background: transparent; }   .orow b { font-weight: 600; width: 12px; }   .orow .warn { color: var(--ban); font-size: 12.5px; white-space: nowrap; margin-left: auto; } """) s=s.replace("""    .thin { font-size: 12.5px; margin-top: 4px; } ""","""    .thin { font-size: 12.5px; margin-top: 4px; }     .outlook-h { margin-top: 5px !important; margin-bottom: 2px; font-size: 15px; }     .orow { padding: 0; font-size: 12.5px; } """) open(p,'w').write(s) E node tests/planner.test.js
+### Ran cd ~/workplace/draftroom; python3 - <<'E' p='web/planner.js' s=open(p).read() s=s.replace("""  const api = { plan, mmss, own, ROLES };""","""  // how deep each role stays for the rest of the series: proven champions (5+ games) not locked yet.   // open = still free after this game's planned picks; planned = proven champions this game's plan uses.   function outlook(D, usId, locked, plannedPicks) {     const us = D.teams[usId], gone = new Set(locked);     const used = new Set((plannedPicks || []).map(p => (typeof p === 'string' ? p : p.champ)));     return ROLES.map(role => {       const proven = Object.entries(us.pool[role] || {}).filter(([c, rec]) => rec[0] >= 5 && !gone.has(c)).map(([c]) => c);       return { role, open: proven.filter(c => !used.has(c)), planned: proven.filter(c => used.has(c)) };     });   }    const api = { plan, outlook, mmss, own, ROLES, ROLE_NAME };""") open(p,'w').write(s)  p='tests/planner.test.js' s=open(p).read() s=s.replace("const { plan } =","const { plan, outlook } =") s=s.replace("""    // play the game as planned""","""    const ol = outlook(D, us, locked, p.steps.us_pick);     assert.strictEqual(ol.length, 5, `${us} vs ${them} game ${game}: outlook needs one row per role`);     for (const r of ol) {       for (const c of [...r.open, ...r.planned]) assert(!locked.includes(c), `${us} game ${game}: outlook lists locked ${c}`);       for (const c of r.open) assert(!r.planned.includes(c), `${us} game ${game}: ${c} is both open and planned`);     }     // play the game as planned""") open(p,'w').write(s)  p='web/index.html' s=open(p).read() s=s.replace("""    <p class="thin" id="thin"></p> ""","""    <p class="thin" id="thin"></p>     <h3 class="outlook-h" id="outlookHead">Fearless outlook</h3>     <div class="outlook num" id="outlook"></div> """) open(p,'w').write(s)  p='web/app.js' s=open(p).read() s=s.replace("""    $('thin').textContent = m.thin; ""","""    $('thin').textContent = m.thin;     outlook(N, done); """) s=s.replace("""  function recap(us""","""  // fearless outlook: one dot per proven champion still open after this game's picks, hollow if the plan uses it   function outlook(N, done) {     $('outlookHead').style.display = $('outlook').style.display = done ? 'none' : '';     if (done) { $('outlook').innerHTML = ''; return; }     const from = N + 1, games = from === S.fmt ? `game ${from}` : `games ${from}-${S.fmt}`;     $('outlook').innerHTML = P.outlook(D, S.us, locked(), m.steps.us_pick).map(r => {       const dots = r.open.map(c => `<i class="dot" title="${esc(c)}"></i>`).join('') +         r.planned.map(c => `<i class="dot plan" title="${esc(c)}, in this game's plan"></i>`).join('');       const warn = r.open.length <= 2 && from <= S.fmt ? `<span class="warn">${r.open.length} left for ${games}</span>` : '';       return `<div class="orow"><span class="role">${P.ROLE_NAME[r.role]}</span><span class="dots" role="img" aria-label="${r.open.length} proven open, ${r.planned.length} planned">${dots}</span>` +         `<b>${r.open.length}</b>${warn}</div>`;     }).join('');   }    function recap(us""",1) open(p,'w').write(s)  p='web/style.css' s=open(p).read() s=s.replace("""  .thin { margin-top: 8px; font-size: 13.5px; color: var(--ban); } ""","""  .thin { margin-top: 8px; font-size: 13.5px; color: var(--ban); }   .outlook-h { margin-top: 10px; margin-bottom: 4px; }   .orow { display: flex; align-items: center; gap: 6px; font-size: 13px; padding: 2px 0; border-top: 1px solid var(--rule); }   .orow .role { width: 58px; flex: none; color: var(--pencil); }   .orow .dots { display: flex; gap: 3px; flex: none; min-width: 86px; }   .orow .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c9); border: 1.5px solid var(--c9); }   .orow .dot.plan { background: transparent; }   .orow b { font-weight: 600; width: 12px; }   .orow .warn { color: var(--ban); font-size: 12.5px; white-space: nowrap; margin-left: auto; } """) s=s.replace("""    .thin { font-size: 12.5px; margin-top: 4px; } ""","""    .thin { font-size: 12.5px; margin-top: 4px; }     .outlook-h { margin-top: 5px !important; margin-bottom: 2px; font-size: 15px; }     .orow { padding: 0; font-size: 12.5px; } """) open(p,'w').write(s) E node tests/planner.test.js
 
 ```text
 ok: 360 plans across 9 teams
@@ -118,7 +118,7 @@ ok: 360 plans across 9 teams
 The planner now includes a fearless outlook feature, with a new outlook function, UI section, and styling, and the planner test suite passed across 360 plans for 9 teams.
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; ls $(npm root -g 2>/dev/null) 2>/dev/null; ls ~/.cache/ms-playwright/chromium-1243; find / -name "playwright*" -maxdepth 6 -type d 2>/dev/null | head
+### Ran cd ~/workplace/draftroom; ls $(npm root -g 2>/dev/null) 2>/dev/null; ls ~/.cache/ms-playwright/chromium-1243; find / -name "playwright*" -maxdepth 6 -type d 2>/dev/null | head
 
 ```text
 @sentry
@@ -133,12 +133,12 @@ chrome-linux64
 ~/playwright-snapshots
 node_modules/playwright
 node_modules/playwright-core
-/home/ubuntu/.bun/install/cache/playwright@1.56.1@@@1
-/home/ubuntu/.bun/install/cache/playwright@1.62.1@@@1
-/home/ubuntu/.bun/install/cache/playwright
-/home/ubuntu/.bun/install/cache/playwright-core@1.56.1@@@1
-/home/ubuntu/.bun/install/cache/playwright-core
-/home/ubuntu/.bun/install/cache/playwright-core@1.62.1@@@1
+~/.bun/install/cache/playwright@1.56.1@@@1
+~/.bun/install/cache/playwright@1.62.1@@@1
+~/.bun/install/cache/playwright
+~/.bun/install/cache/playwright-core@1.56.1@@@1
+~/.bun/install/cache/playwright-core
+~/.bun/install/cache/playwright-core@1.62.1@@@1
 ```
 
 ```text
@@ -149,14 +149,14 @@ The bash command listed global npm packages, a Chromium browser directory, and P
 
 I've implemented the outlook feature in the planner, capping the dots at 8, and its tests pass (360 plans). Next I'll check that the page fits 1366x680 without scrolling, using Playwright from another local project.
 
-### Failed to run cd /home/ubuntu/workplace/draftroom; cat > $JUNIE_TMPDIR/shot.js <<'E' const { chromium } = require('node_modules/playwright'); (async () => {   const b = await chromium.launch();   const pg = await b.newPage({ viewport: { width: 1366, height: 680 } });   await pg.goto('file:///home/ubuntu/workplace/draftroom/web/index.html?vs=TL&t=30');   await pg.waitForTimeout(800);   const m = () => pg.evaluate(() => ({ sh: document.documentElement.scrollHeight, ch: innerHeight, sw: document.documentElement.scrollWidth, rows: document.querySelectorAll('.orow').length }));   console.log('game1', await m());   await pg.screenshot({ path: process.env.JUNIE_TMPDIR + '/g1.png' });   // lock game 1 as planned, then game 2   for (let g = 0; g < 2; g++) {     await pg.click('#lockBtn');     await pg.evaluate(() => { document.querySelectorAll('#lockForm input[type=radio]')[0].checked = true; });     await pg.click('#dlgOk');     await pg.waitForTimeout(500);     console.log('after lock', g + 1, await m());     await pg.screenshot({ path: process.env.JUNIE_TMPDIR + `/g${g + 2}.png` });   }   console.log(await pg.evaluate(() => document.getElementById('outlook').innerText));   await b.close(); })(); E node $JUNIE_TMPDIR/shot.js
+### Failed to run cd ~/workplace/draftroom; cat > $JUNIE_TMPDIR/shot.js <<'E' const { chromium } = require('node_modules/playwright'); (async () => {   const b = await chromium.launch();   const pg = await b.newPage({ viewport: { width: 1366, height: 680 } });   await pg.goto('file://~/workplace/draftroom/web/index.html?vs=TL&t=30');   await pg.waitForTimeout(800);   const m = () => pg.evaluate(() => ({ sh: document.documentElement.scrollHeight, ch: innerHeight, sw: document.documentElement.scrollWidth, rows: document.querySelectorAll('.orow').length }));   console.log('game1', await m());   await pg.screenshot({ path: process.env.JUNIE_TMPDIR + '/g1.png' });   // lock game 1 as planned, then game 2   for (let g = 0; g < 2; g++) {     await pg.click('#lockBtn');     await pg.evaluate(() => { document.querySelectorAll('#lockForm input[type=radio]')[0].checked = true; });     await pg.click('#dlgOk');     await pg.waitForTimeout(500);     console.log('after lock', g + 1, await m());     await pg.screenshot({ path: process.env.JUNIE_TMPDIR + `/g${g + 2}.png` });   }   console.log(await pg.evaluate(() => document.getElementById('outlook').innerText));   await b.close(); })(); E node $JUNIE_TMPDIR/shot.js
 
 ```text
 node:internal/process/promises:394
     triggerUncaughtException(err, true /* fromPromise */);
     ^
 
-browserType.launch: Executable doesn't exist at /home/ubuntu/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell
+browserType.launch: Executable doesn't exist at ~/.cache/ms-playwright/chromium_headless_shell-1208/chrome-headless-shell-linux64/chrome-headless-shell
 ╔═════════════════════════════════════════════════════════════════════════╗
 ║ Looks like Playwright Test or Playwright was just installed or updated. ║
 ║ Please run the following command to download new browsers:              ║
@@ -173,7 +173,7 @@ browserType.launch: Executable doesn't exist at /home/ubuntu/.cache/ms-playwrigh
 Node.js v22.23.2
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; sed -i "s|chromium.launch()|chromium.launch({ executablePath: '/home/ubuntu/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome' })|" $JUNIE_TMPDIR/shot.js; node $JUNIE_TMPDIR/shot.js 2>&1 | head -30
+### Ran cd ~/workplace/draftroom; sed -i "s|chromium.launch()|chromium.launch({ executablePath: '~/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome' })|" $JUNIE_TMPDIR/shot.js; node $JUNIE_TMPDIR/shot.js 2>&1 | head -30
 
 ```text
 game1 { sh: 693, ch: 680, sw: 1366, rows: 5 }
@@ -212,7 +212,7 @@ Call log:
 The script ran with a patched Chromium executable path, but it failed with a timeout because a lock dialog intercepted the click on an element.
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; cat > $JUNIE_TMPDIR/m.js <<'E' const { chromium } = require('node_modules/playwright'); (async () => {   const b = await chromium.launch({ executablePath: '/home/ubuntu/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome' });   const pg = await b.newPage({ viewport: { width: 1366, height: 680 } });   await pg.goto('file:///home/ubuntu/workplace/draftroom/web/index.html?vs=TL&t=30');   await pg.waitForTimeout(800);   const m = () => pg.evaluate(() => { const r = e => Math.round(document.querySelector(e).getBoundingClientRect().height); return { sh: document.documentElement.scrollHeight, left: r('.sheet'), mid: r('.board .sheet:nth-child(2)'), right: r('.board .sheet:nth-child(3)'), body: r('body') }; });   console.log('with', await m());   await pg.evaluate(() => { outlookHead.style.display = outlook.style.display = 'none'; });   console.log('without', await m());   await b.close(); })(); E node $JUNIE_TMPDIR/m.js
+### Ran cd ~/workplace/draftroom; cat > $JUNIE_TMPDIR/m.js <<'E' const { chromium } = require('node_modules/playwright'); (async () => {   const b = await chromium.launch({ executablePath: '~/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome' });   const pg = await b.newPage({ viewport: { width: 1366, height: 680 } });   await pg.goto('file://~/workplace/draftroom/web/index.html?vs=TL&t=30');   await pg.waitForTimeout(800);   const m = () => pg.evaluate(() => { const r = e => Math.round(document.querySelector(e).getBoundingClientRect().height); return { sh: document.documentElement.scrollHeight, left: r('.sheet'), mid: r('.board .sheet:nth-child(2)'), right: r('.board .sheet:nth-child(3)'), body: r('body') }; });   console.log('with', await m());   await pg.evaluate(() => { outlookHead.style.display = outlook.style.display = 'none'; });   console.log('without', await m());   await b.close(); })(); E node $JUNIE_TMPDIR/m.js
 
 ```text
 with { sh: 693, left: 424, mid: 424, right: 424, body: 693 }
@@ -227,7 +227,7 @@ A Playwright script measured the page layout with and without the outlook elemen
 
 I found that the 693px overflow against the 680px viewport is still there with the Outlook block hidden, so my change didn't cause it, though the second lock step is still failing. Next I'll measure the worst case with two and three games locked by injecting the series state into localStorage.
 
-### Ran cd /home/ubuntu/workplace/draftroom; cat > $JUNIE_TMPDIR/m2.js <<'E' const { chromium } = require('node_modules/playwright'); (async () => {   const b = await chromium.launch({ executablePath: '/home/ubuntu/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome' });   const pg = await b.newPage({ viewport: { width: 1366, height: 680 } });   await pg.goto('file:///home/ubuntu/workplace/draftroom/web/index.html');   for (const n of [0, 1, 2, 3]) {     await pg.evaluate(n => {       const D = window.DRAFTROOM, us = Object.keys(D.teams).find(i => D.teams[i].tag === 'C9'), them = Object.keys(D.teams).find(i => D.teams[i].tag === 'TL');       const pickFor = (id, k) => ['top','jungle','mid','adc','support'].map(r => Object.keys(D.teams[id].pool[r]).sort()[k]);       const games = Array.from({ length: n }, (_, k) => ({ picks: { us: pickFor(us, k), them: pickFor(them, k) }, winner: k % 2 ? 'us' : 'them', real: null }));       localStorage.setItem('draftroom.series.v1', JSON.stringify({ us, them, fmt: 5, side1Blue: true, games, real: null }));     }, n);     await pg.goto('file:///home/ubuntu/workplace/draftroom/web/index.html?t=30');     await pg.waitForTimeout(600);     const r = await pg.evaluate(() => ({ sh: document.documentElement.scrollHeight, left: Math.round(document.querySelector('.sheet').getBoundingClientRect().height),       mid: Math.round(document.querySelector('.board .sheet:nth-child(2)').scrollHeight), txt: document.getElementById('outlook').innerText.replace(/\n/g, ' | ') }));     console.log(n, r);     await pg.screenshot({ path: process.env.JUNIE_TMPDIR + `/s${n}.png` });   }   await b.close(); })(); E node $JUNIE_TMPDIR/m2.js
+### Ran cd ~/workplace/draftroom; cat > $JUNIE_TMPDIR/m2.js <<'E' const { chromium } = require('node_modules/playwright'); (async () => {   const b = await chromium.launch({ executablePath: '~/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome' });   const pg = await b.newPage({ viewport: { width: 1366, height: 680 } });   await pg.goto('file://~/workplace/draftroom/web/index.html');   for (const n of [0, 1, 2, 3]) {     await pg.evaluate(n => {       const D = window.DRAFTROOM, us = Object.keys(D.teams).find(i => D.teams[i].tag === 'C9'), them = Object.keys(D.teams).find(i => D.teams[i].tag === 'TL');       const pickFor = (id, k) => ['top','jungle','mid','adc','support'].map(r => Object.keys(D.teams[id].pool[r]).sort()[k]);       const games = Array.from({ length: n }, (_, k) => ({ picks: { us: pickFor(us, k), them: pickFor(them, k) }, winner: k % 2 ? 'us' : 'them', real: null }));       localStorage.setItem('draftroom.series.v1', JSON.stringify({ us, them, fmt: 5, side1Blue: true, games, real: null }));     }, n);     await pg.goto('file://~/workplace/draftroom/web/index.html?t=30');     await pg.waitForTimeout(600);     const r = await pg.evaluate(() => ({ sh: document.documentElement.scrollHeight, left: Math.round(document.querySelector('.sheet').getBoundingClientRect().height),       mid: Math.round(document.querySelector('.board .sheet:nth-child(2)').scrollHeight), txt: document.getElementById('outlook').innerText.replace(/\n/g, ' | ') }));     console.log(n, r);     await pg.screenshot({ path: process.env.JUNIE_TMPDIR + `/s${n}.png` });   }   await b.close(); })(); E node $JUNIE_TMPDIR/m2.js
 
 ```text
 0 {
@@ -262,7 +262,7 @@ The script loaded the draft page with 0 to 3 simulated series games and measured
 
 ### Read /tmp/junie-session-261124-075613-1vv6/s3.png
 
-### Ran cd /home/ubuntu/workplace/draftroom; sed -i "s|const r = await pg.evaluate|await pg.evaluate(() => { if (process_hide) {} });\n    const r = await pg.evaluate|" $JUNIE_TMPDIR/m2.js; sed -i "s|await pg.evaluate(() => { if (process_hide) {} });|await pg.evaluate(() => { document.getElementById('outlookHead').style.display = document.getElementById('outlook').style.display = 'none'; });|" $JUNIE_TMPDIR/m2.js; node $JUNIE_TMPDIR/m2.js | grep -E "^[0-9]|sh:"
+### Ran cd ~/workplace/draftroom; sed -i "s|const r = await pg.evaluate|await pg.evaluate(() => { if (process_hide) {} });\n    const r = await pg.evaluate|" $JUNIE_TMPDIR/m2.js; sed -i "s|await pg.evaluate(() => { if (process_hide) {} });|await pg.evaluate(() => { document.getElementById('outlookHead').style.display = document.getElementById('outlook').style.display = 'none'; });|" $JUNIE_TMPDIR/m2.js; node $JUNIE_TMPDIR/m2.js | grep -E "^[0-9]|sh:"
 
 ```text
 0 { sh: 693, left: 424, mid: 422, txt: 'Top6Jungle6Mid5Bot5Support7' }
@@ -275,7 +275,7 @@ The script loaded the draft page with 0 to 3 simulated series games and measured
 The script was modified to hide the outlook elements before evaluation, and it ran successfully, printing four result lines with values for sh, left, mid, and txt.
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; python3 - <<'E' p='web/style.css' s=open(p).read() s=s.replace("""    .orow { padding: 0; font-size: 12.5px; } ""","""    .orow { padding: 0; font-size: 12.5px; line-height: 1.3; }     .orow .dot { width: 8px; height: 8px; }     .board { grid-template-columns: minmax(300px, 30%) minmax(0, 1fr) minmax(260px, 22%); }     body { padding-top: 8px; padding-bottom: 6px; }     .top .game { margin-top: 2px; }     .plan h2 { padding-top: 6px; font-size: 13px; }     .plan-line .say { font-size: 24px; }     .plan-line { padding: 2px 24px; }     .plan button { padding: 10px 22px; font-size: 17px; }     .plan .go { gap: 6px; }     .plan { padding-bottom: 6px; margin-bottom: 8px; }     .src { margin-top: 3px; line-height: 1.2; } """) open(p,'w').write(s) E sed -i "s|const r = await pg.evaluate(() => ({ sh|const r = await pg.evaluate(() => ({ sh|; /outlookHead').style.display/d" $JUNIE_TMPDIR/m2.js; sed -i "s/\[0, 1, 2, 3\]/[0, 1, 2, 3, 4]/" $JUNIE_TMPDIR/m2.js; node $JUNIE_TMPDIR/m2.js | grep -E "^[0-9]|sh:"
+### Ran cd ~/workplace/draftroom; python3 - <<'E' p='web/style.css' s=open(p).read() s=s.replace("""    .orow { padding: 0; font-size: 12.5px; } ""","""    .orow { padding: 0; font-size: 12.5px; line-height: 1.3; }     .orow .dot { width: 8px; height: 8px; }     .board { grid-template-columns: minmax(300px, 30%) minmax(0, 1fr) minmax(260px, 22%); }     body { padding-top: 8px; padding-bottom: 6px; }     .top .game { margin-top: 2px; }     .plan h2 { padding-top: 6px; font-size: 13px; }     .plan-line .say { font-size: 24px; }     .plan-line { padding: 2px 24px; }     .plan button { padding: 10px 22px; font-size: 17px; }     .plan .go { gap: 6px; }     .plan { padding-bottom: 6px; margin-bottom: 8px; }     .src { margin-top: 3px; line-height: 1.2; } """) open(p,'w').write(s) E sed -i "s|const r = await pg.evaluate(() => ({ sh|const r = await pg.evaluate(() => ({ sh|; /outlookHead').style.display/d" $JUNIE_TMPDIR/m2.js; sed -i "s/\[0, 1, 2, 3\]/[0, 1, 2, 3, 4]/" $JUNIE_TMPDIR/m2.js; node $JUNIE_TMPDIR/m2.js | grep -E "^[0-9]|sh:"
 
 ```text
 0 {
@@ -300,7 +300,7 @@ I found that the left panel was already over the 680px viewport before my change
 
 ### Read /tmp/junie-session-261124-075613-1vv6/s3.png
 
-### Ran cd /home/ubuntu/workplace/draftroom; python3 - <<'E' p='web/app.js' s=open(p).read() a="""`<div class="used"><span class="t ${c}">${esc(t)}</span>""" assert a in s s=s.replace(a,"""`<div class="used" title="${esc(xs.join(', '))}"><span class="t ${c}">${esc(t)}</span>""") open(p,'w').write(s) p='web/style.css' s=open(p).read() s=s.replace("""    .orow .dot { width: 8px; height: 8px; } ""","""    .orow .dot { width: 8px; height: 8px; }     .outlook-h { font-size: 14px; }     .used { flex-wrap: nowrap; overflow: hidden; margin-bottom: 2px; -webkit-mask-image: linear-gradient(90deg, #000 92%, transparent); mask-image: linear-gradient(90deg, #000 92%, transparent); }     .used span { flex: none; }     .pool td { padding: 1px 0; }     .sheet h3 { margin-bottom: 4px; } """) open(p,'w').write(s) E node $JUNIE_TMPDIR/m2.js | grep -E "^[0-9]|sh:"
+### Ran cd ~/workplace/draftroom; python3 - <<'E' p='web/app.js' s=open(p).read() a="""`<div class="used"><span class="t ${c}">${esc(t)}</span>""" assert a in s s=s.replace(a,"""`<div class="used" title="${esc(xs.join(', '))}"><span class="t ${c}">${esc(t)}</span>""") open(p,'w').write(s) p='web/style.css' s=open(p).read() s=s.replace("""    .orow .dot { width: 8px; height: 8px; } ""","""    .orow .dot { width: 8px; height: 8px; }     .outlook-h { font-size: 14px; }     .used { flex-wrap: nowrap; overflow: hidden; margin-bottom: 2px; -webkit-mask-image: linear-gradient(90deg, #000 92%, transparent); mask-image: linear-gradient(90deg, #000 92%, transparent); }     .used span { flex: none; }     .pool td { padding: 1px 0; }     .sheet h3 { margin-bottom: 4px; } """) open(p,'w').write(s) E node $JUNIE_TMPDIR/m2.js | grep -E "^[0-9]|sh:"
 
 ```text
 0 {
@@ -327,7 +327,7 @@ I clipped the locked-champion lists and tightened the left panel, so the page no
 
 ### Read /tmp/junie-session-261124-075613-1vv6/s1.png
 
-### Ran cd /home/ubuntu/workplace/draftroom; sed -e "s/'C9'/'SEN'/; s/\[0, 1, 2, 3, 4\]/[0, 1]/" $JUNIE_TMPDIR/m2.js > $JUNIE_TMPDIR/m3.js; node $JUNIE_TMPDIR/m3.js | grep -E "^[0-9]|sh:|txt"
+### Ran cd ~/workplace/draftroom; sed -e "s/'C9'/'SEN'/; s/\[0, 1, 2, 3, 4\]/[0, 1]/" $JUNIE_TMPDIR/m2.js > $JUNIE_TMPDIR/m3.js; node $JUNIE_TMPDIR/m3.js | grep -E "^[0-9]|sh:|txt"
 
 ```text
 0 {
@@ -348,7 +348,7 @@ The command ran a modified script and printed two result entries, each showing s
 The attempt to open the file sen1.png failed because it does not exist in the project.
 ```
 
-### Ran cd /home/ubuntu/workplace/draftroom; ls -la --time-style=full-iso $JUNIE_TMPDIR/*.png | head; cp $JUNIE_TMPDIR/s1.png $JUNIE_TMPDIR/sen1.png
+### Ran cd ~/workplace/draftroom; ls -la --time-style=full-iso $JUNIE_TMPDIR/*.png | head; cp $JUNIE_TMPDIR/s1.png $JUNIE_TMPDIR/sen1.png
 
 ```text
 -rw-r--r-- 1 ubuntu ubuntu 198171 2026-11-24 07:57:01.528679986 +0000 /tmp/junie-session-261124-075613-1vv6/g1.png
@@ -370,7 +370,7 @@ The bash command listed the PNG files in the session temporary directory and cop
 
 I confirmed the SEN render at game 2 looks correct, with the red note on Top and Jungle and the page fitting at 1366x680, and the planner test passed. I'm now checking git status to make sure the ignored data.js stays unstaged before I submit.
 
-### Ran cd /home/ubuntu/workplace/draftroom; node tests/planner.test.js; git status --short
+### Ran cd ~/workplace/draftroom; node tests/planner.test.js; git status --short
 
 ```text
 ok: 360 plans across 9 teams

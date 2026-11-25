@@ -30,7 +30,7 @@ style.css
   360 web/style.css
   112 web/index.html
   472 total
-/home/ubuntu/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
+~/.cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell
 ```
 
 ```text

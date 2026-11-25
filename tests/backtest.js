@@ -218,7 +218,7 @@ Planner hit where the baseline missed: ${S.onlyModel} runs. Baseline hit where t
 
 const md = `# Backtest
 
-If a coach had used the planner before each real ${meta.league} ${meta.since.slice(0, 4)} game, how often would its prediction of the opponent's picks have been right?
+If a coach had used the planner before each real ${meta.league} ${meta.since.slice(0, 4)} game, how much of the plan would have held up, and how often would its guess of the opponent's picks have been right?
 
 - **Date range:** ${range}
 - **Games:** ${cases.length} (of ${meta.league_games_in_range} ${meta.league} games since ${meta.since}; left out: ${skipped})
